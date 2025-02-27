@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import { swagger } from "@elysiajs/swagger";
 import { apiRoutes } from "./routes";
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+const port = process.env.PORT || 3000;
 
 const app = new Elysia()
   .use(
@@ -59,8 +59,6 @@ const app = new Elysia()
       )
       .use(apiRoutes)
   )
-  .listen(PORT);
+  .listen(port);
 
 console.log(`🚀 Server running at ${app.server?.hostname}:${app.server?.port}`);
-
-export default app;
