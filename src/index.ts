@@ -6,7 +6,7 @@ const port = process.env.PORT || 3000;
 
 const app = new Elysia()
   .get("/", ({ redirect }) => {
-    return redirect("/api");
+    return redirect("/api", { hide: true });
   })
   .group("/api", (app) =>
     app
