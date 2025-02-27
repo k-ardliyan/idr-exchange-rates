@@ -1,4 +1,12 @@
 {
-  "builds": [{ "src": "src/app.ts", "use": "@vercel/node" }],
-  "routes": [{ "src": "/(.*)", "dest": "src/app.ts" }]
+  "builds": [{ "src": "src/**/*.ts", "use": "@vercel/node" }],
+  "routes": [{ "src": "/(.*)", "dest": "src/app.ts" }],
+  "functions": {
+    "api": {
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
