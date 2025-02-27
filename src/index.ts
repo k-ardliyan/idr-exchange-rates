@@ -44,8 +44,11 @@ const app = new Elysia()
       },
     }
   )
-  .use(apiRoutes);
-// .listen(3000);
+  .use(apiRoutes)
+  .listen({
+    port: process.env.PORT || 3000,
+    hostname: "0.0.0.0",
+  });
 
 console.log(`🚀 Server running at ${app.server?.port ?? 3000}`);
 
