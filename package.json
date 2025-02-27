@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@elysiajs/swagger": "^1.2.2",
+    "@vercel/edge": "^1.2.1",
     "cheerio": "^1.0.0",
     "dotenv": "^16.4.7",
     "elysia": "latest",
