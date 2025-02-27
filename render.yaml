@@ -6,8 +6,8 @@ services:
     plan: free
     envVars:
       - key: BUN_VERSION
-        value: 1.2.4
-    region: oregon
+        value: latest
+    region: singapore
     buildCommand: bun install
     startCommand: bun start
 version: "1"
