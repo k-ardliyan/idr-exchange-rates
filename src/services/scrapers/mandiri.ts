@@ -1,5 +1,4 @@
 import { load } from "cheerio";
-import { request } from "undici";
 
 const MANDIRI_URL = "https://www.bankmandiri.co.id/kurs";
 
@@ -23,8 +22,8 @@ interface ExchangeRate {
 }
 
 export const scrapeMandiri = async () => {
-  const { body } = await request(MANDIRI_URL);
-  const html = await body.text();
+  const response = await fetch(MANDIRI_URL);
+  const html = await response.text();
   const $ = load(html);
 
   const rates: ExchangeRate[] = [];

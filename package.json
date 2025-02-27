@@ -5,14 +5,13 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts",
-    "start": "bun run dist/index.js"
+    "build": "bun build src/index.ts --outdir dist",
+    "start": "NODE_ENV=production bun src/index.ts"
   },
   "dependencies": {
     "@elysiajs/swagger": "^1.2.2",
     "cheerio": "^1.0.0",
-    "elysia": "latest",
-    "undici": "^7.3.0"
+    "elysia": "latest"
   },
   "devDependencies": {
     "bun-types": "latest",

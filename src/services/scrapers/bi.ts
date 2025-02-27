@@ -1,5 +1,4 @@
 import { load } from "cheerio";
-import { request } from "undici";
 import type { CheerioAPI } from "cheerio";
 
 const BI_URL =
@@ -24,8 +23,8 @@ export const scrapeBI = async (
 ): Promise<BIExchangeRate[]> => {
   try {
     // First request to get the form tokens
-    const initialResponse = await request(BI_URL);
-    const html = await initialResponse.body.text();
+    const initialResponse = await fetch(BI_URL);
+    const html = await initialResponse.text();
     const $ = load(html);
 
     // Extract the date shown on the page
@@ -85,7 +84,7 @@ export const scrapeBI = async (
     }
 
     // Submit the form
-    const response = await request(BI_URL, {
+    const response = await fetch(BI_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -94,7 +93,7 @@ export const scrapeBI = async (
       body: formData.toString(),
     });
 
-    const filteredHtml = await response.body.text();
+    const filteredHtml = await response.text();
     const $filtered = load(filteredHtml);
 
     // Extract date from filtered result - check both formats

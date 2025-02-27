@@ -1,5 +1,4 @@
 import { load } from "cheerio";
-import { request } from "undici";
 
 const BCA_URL = "https://www.bca.co.id/en/informasi/kurs";
 
@@ -23,8 +22,8 @@ interface ExchangeRate {
 }
 
 export const scrapeBCA = async () => {
-  const { body } = await request(BCA_URL);
-  const html = await body.text();
+  const response = await fetch(BCA_URL);
+  const html = await response.text();
   const $ = load(html);
 
   const rates: ExchangeRate[] = [];

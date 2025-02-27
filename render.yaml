@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: idr-exchange-rates
+    runtime: node
+    repo: https://github.com/k-ardliyan/idr-exchange-rates
+    plan: free
+    envVars:
+      - key: BUN_VERSION
+        value: 1.2.4
+    region: oregon
+    buildCommand: bun install
+    startCommand: bun start
+version: "1"
