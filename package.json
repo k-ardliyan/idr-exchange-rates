@@ -1,0 +1,21 @@
+{
+  "name": "idr-exchange-rates",
+  "description": "A web scraper and API to collect exchange rates of the Indonesian Rupiah (IDR) from multiple sources, including Bank Indonesia and major commercial banks. Supports real-time data retrieval.",
+  "version": "1.0.0",
+  "main": "src/app.ts",
+  "scripts": {
+    "dev": "bun run --watch src/app.ts",
+    "start": "bun src/app.ts"
+  },
+  "dependencies": {
+    "@elysiajs/swagger": "^1.2.2",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "elysia": "latest",
+    "undici": "^7.3.0"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "module": "src/app.js"
+}
