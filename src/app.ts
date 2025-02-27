@@ -44,12 +44,9 @@ const app = new Elysia()
       },
     }
   )
-  .use(apiRoutes)
-  .listen(3000);
+  .use(apiRoutes);
+// .listen(3000);
 
 console.log(`🚀 Server running at ${app.server?.port ?? 3000}`);
 
 export default app;
-export type { Elysia };
-export type { swagger };
-export type { ElysiaSwaggerConfig } from "@elysiajs/swagger";
