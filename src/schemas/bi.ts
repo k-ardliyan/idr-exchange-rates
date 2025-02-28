@@ -1,4 +1,4 @@
-import { t } from "@sinclair/typebox";
+import { t } from "elysia";
 
 const ExchangeRateSchema = t.Object({
   currency: t.String({
@@ -76,4 +76,9 @@ const ErrorResponseSchema = t.Object({
   }),
 });
 
-export { ExchangeRateSchema, DataSchema, SuccessResponseSchema, ErrorResponseSchema };
+export {
+  ExchangeRateSchema,
+  DataSchema,
+  SuccessResponseSchema,
+  ErrorResponseSchema,
+};

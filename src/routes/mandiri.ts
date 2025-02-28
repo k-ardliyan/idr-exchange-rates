@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { scrapeMandiri } from "../services/scrapers/mandiri";
-import { ExchangeRateSchema, DataSchema, SuccessResponseSchema, ErrorResponseSchema } from "../schemas/mandiri";
+import { SuccessResponseSchema, ErrorResponseSchema } from "../schemas/mandiri";
 
 export const mandiriRoutes = new Elysia().get(
   "/mandiri",

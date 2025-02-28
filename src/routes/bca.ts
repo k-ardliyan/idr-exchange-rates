@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { scrapeBCA } from "../services/scrapers/bca";
-import { ExchangeRateSchema, DataSchema, SuccessResponseSchema, ErrorResponseSchema } from "../schemas/bca";
+import { SuccessResponseSchema, ErrorResponseSchema } from "../schemas/bca";
 
 export const bcaRoutes = new Elysia().get(
   "/bca",

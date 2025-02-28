@@ -2,11 +2,17 @@
   "name": "idr-exchange-rates",
   "description": "A web scraper and API to collect exchange rates of the Indonesian Rupiah (IDR) from multiple sources, including Bank Indonesia and major commercial banks. Supports real-time data retrieval.",
   "version": "1.0.0",
+  "author": {
+    "name": "k-ardliyan",
+    "url": "https://github.com/k-ardliyan"
+  },
+  "license": "MIT",
   "main": "src/index.ts",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist",
-    "start": "NODE_ENV=production bun src/index.ts"
+    "start": "NODE_ENV=production bun src/index.ts",
+    "test": "bun test tests/**/*.test.ts"
   },
   "dependencies": {
     "@elysiajs/swagger": "^1.2.2",
@@ -17,5 +23,27 @@
     "bun-types": "latest",
     "typescript": "^5.7.3"
   },
-  "module": "src/index.js"
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/k-ardliyan/idr-exchange-rates.git"
+  },
+  "bugs": {
+    "url": "https://github.com/k-ardliyan/idr-exchange-rates/issues"
+  },
+  "homepage": "https://github.com/k-ardliyan/idr-exchange-rates#readme",
+  "keywords": [
+    "indonesia",
+    "rupiah",
+    "exchange-rates",
+    "currency",
+    "api",
+    "web-scraper",
+    "financial",
+    "data",
+    "exchange"
+  ]
 }
