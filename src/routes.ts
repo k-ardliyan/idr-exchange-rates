@@ -3,6 +3,7 @@ import { mandiriRoutes } from "./features/mandiri";
 import { bcaRoutes } from "./features/bca";
 import { biRoutes } from "./features/bi";
 import { bniRoutes } from "./features/bni";
+import { briRoutes } from "./features/bri";
 
 export const apiRoutes = new Elysia({ prefix: "/api" })
   .get(
@@ -25,4 +26,5 @@ export const apiRoutes = new Elysia({ prefix: "/api" })
   .use(bcaRoutes)
   .use(biRoutes)
   .use(bniRoutes)
+  .use(briRoutes)
   .use(mandiriRoutes);

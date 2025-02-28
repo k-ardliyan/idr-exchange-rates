@@ -8,10 +8,7 @@ A fast, reliable API service providing real-time Indonesian Rupiah (IDR) exchang
 
 [Getting Started](#-getting-started) • [Documentation](#-api-documentation) • [Contributing](#-contributing) • [License](#-license) • [Live Demo](https://idr-exchange-rates.onrender.com/docs)
 
-<img src="https://img.shields.io/badge/BCA-blue?style=flat-square&logo=bank&logoColor=white">
-<img src="https://img.shields.io/badge/Bank Indonesia-red?style=flat-square&logo=bank&logoColor=white">
-<img src="https://img.shields.io/badge/BNI-orange?style=flat-square&logo=bank&logoColor=white">
-<img src="https://img.shields.io/badge/Mandiri-yellow?style=flat-square&logo=bank&logoColor=white">
+[![BCA](https://img.shields.io/badge/BCA-blue?style=flat-square&logo=bank&logoColor=white)](https://www.bca.co.id/) [![Bank Indonesia](https://img.shields.io/badge/Bank%20Indonesia-red?style=flat-square&logo=bank&logoColor=white)](https://www.bi.go.id/) [![BNI](https://img.shields.io/badge/BNI-orange?style=flat-square&logo=bank&logoColor=white)](https://www.bni.co.id/) [![BRI](https://img.shields.io/badge/BRI-blue?style=flat-square&logo=bank&logoColor=white)](https://bri.co.id/) [![Mandiri](https://img.shields.io/badge/Mandiri-yellow?style=flat-square&logo=bank&logoColor=white)](https://bankmandiri.co.id/)
 
 </div>
 
@@ -25,6 +22,7 @@ IDR Exchange Rates API is an open-source service that collects and provides exch
   - 🏛️ Bank Central Asia (BCA)
   - 🏛️ Bank Indonesia (BI)
   - 🏛️ Bank Negara Indonesia (BNI)
+  - 🏛️ Bank Rakyat Indonesia (BRI)
   - 🏛️ Bank Mandiri
 - **Real-time Data**: Latest exchange rates with timestamps
 - **Consistent API Format**: Standardized JSON responses across all endpoints
@@ -56,7 +54,8 @@ The API documentation is available via Swagger UI at `/docs`
 - GET `/api/bca` - Retrieve Bank BCA exchange rates
 - GET `/api/bi` - Retrieve Bank Indonesia exchange rates
 - GET `/api/bni` - Retrieve Bank BNI exchange rates
-- GET `/api/mandiri` - Retrieve Bank Mandiri exchange rates`
+- GET `/api/bri` - Retrieve Bank BRI exchange rates
+- GET `/api/mandiri` - Retrieve Bank Mandiri exchange rates
 - GET `/docs` - View API documentation
 
 ## 🛠️ Tech Stack
@@ -76,9 +75,10 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 🙏 Acknowledgements
 
-- Bank BCA for providing exchange rate data
+- Bank Central Asia (BCA) for providing exchange rate data
 - Bank Indonesia for providing exchange rate data
-- Bank BNI for providing exchange rate data
+- Bank Negara Indonesia (BNI) for providing exchange rate data
+- Bank Rakyat Indonesia (BRI) for providing exchange rate data
 - Bank Mandiri for providing exchange rate data
 
 ## ⚠️ Disclaimer
