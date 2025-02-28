@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import { mandiriRoutes } from "./mandiri";
 import { bcaRoutes } from "./bca";
 import { biRoutes } from "./bi";
+import { bniRoutes } from "./bni";
 
 export const apiRoutes = new Elysia({ prefix: "/api" })
   .get(
@@ -23,4 +24,5 @@ export const apiRoutes = new Elysia({ prefix: "/api" })
   )
   .use(bcaRoutes)
   .use(biRoutes)
+  .use(bniRoutes)
   .use(mandiriRoutes);
