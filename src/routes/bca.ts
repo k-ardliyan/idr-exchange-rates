@@ -42,9 +42,9 @@ export const bcaRoutes = new Elysia().get(
       500: ErrorResponseSchema,
     },
     detail: {
-      summary: "Bank BCA Exchange Rates",
+      summary: "BCA Exchange Rates",
       description:
-        "Retrieves the latest exchange rates from Bank BCA's website, including e-Rate, TT counter rates, and bank notes rates for multiple currencies.",
+        "Retrieves the latest exchange rates from BCA's website, including e-Rate, TT counter rates, and bank notes rates for multiple currencies.",
     },
   }
 );

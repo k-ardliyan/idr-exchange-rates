@@ -8,43 +8,43 @@ const ExchangeRateSchema = t.Object({
   eRate: t.Object({
     buy: t.Number({
       description: "e-Rate buy price in IDR",
-      example: 15650,
+      example: 16555,
     }),
     sell: t.Number({
       description: "e-Rate sell price in IDR",
-      example: 15750,
+      example: 16575,
     }),
     date: t.String({
       description: "Date when the e-Rate was updated",
-      example: "27 Februari 2025 10:00 WIB",
+      example: "27 Feb 2025 / 10:00 WIB",
     }),
   }),
   ttCounter: t.Object({
     buy: t.Number({
       description: "TT Counter buy price in IDR",
-      example: 15600,
+      example: 16385,
     }),
     sell: t.Number({
       description: "TT Counter sell price in IDR",
-      example: 15800,
+      example: 16685,
     }),
     date: t.String({
       description: "Date when the TT Counter rate was updated",
-      example: "27 Februari 2025 10:00 WIB",
+      example: "27 Feb 2025 / 10:00 WIB",
     }),
   }),
   bankNotes: t.Object({
     buy: t.Number({
       description: "Bank Notes buy price in IDR",
-      example: 15550,
+      example: 16385,
     }),
     sell: t.Number({
       description: "Bank Notes sell price in IDR",
-      example: 15850,
+      example: 16685,
     }),
     date: t.String({
       description: "Date when the Bank Notes rate was updated",
-      example: "27 Februari 2025 10:00 WIB",
+      example: "27 Feb 2025 / 10:00 WIB",
     }),
   }),
 });

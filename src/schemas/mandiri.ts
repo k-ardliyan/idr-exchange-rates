@@ -8,11 +8,11 @@ const ExchangeRateSchema = t.Object({
   specialRate: t.Object({
     buy: t.Number({
       description: "Special rate buy price in IDR",
-      example: 15650,
+      example: 16515,
     }),
     sell: t.Number({
       description: "Special rate sell price in IDR",
-      example: 15750,
+      example: 16540,
     }),
     date: t.String({
       description: "Date when the special rate was updated",
@@ -22,11 +22,11 @@ const ExchangeRateSchema = t.Object({
   ttCounter: t.Object({
     buy: t.Number({
       description: "TT Counter buy price in IDR",
-      example: 15600,
+      example: 16275,
     }),
     sell: t.Number({
       description: "TT Counter sell price in IDR",
-      example: 15800,
+      example: 16625,
     }),
     date: t.String({
       description: "Date when the TT Counter rate was updated",
@@ -36,11 +36,11 @@ const ExchangeRateSchema = t.Object({
   bankNotes: t.Object({
     buy: t.Number({
       description: "Bank Notes buy price in IDR",
-      example: 15550,
+      example: 16275,
     }),
     sell: t.Number({
       description: "Bank Notes sell price in IDR",
-      example: 15850,
+      example: 16625,
     }),
     date: t.String({
       description: "Date when the Bank Notes rate was updated",

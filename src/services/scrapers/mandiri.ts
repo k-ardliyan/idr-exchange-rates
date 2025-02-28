@@ -1,3 +1,4 @@
+import { fetch } from "bun";
 import { load } from "cheerio";
 
 const MANDIRI_URL = "https://www.bankmandiri.co.id/kurs";

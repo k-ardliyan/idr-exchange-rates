@@ -15,15 +15,15 @@ const ExchangeRateSchema = t.Object({
   }),
   buy: t.Number({
     description: "Buy price in IDR",
-    example: 15650,
+    example: 16348.84,
   }),
   sell: t.Number({
     description: "Sell price in IDR",
-    example: 15750,
+    example: 16513.15,
   }),
   date: t.String({
     description: "Date when the rate was updated",
-    example: "27 Feb 2025",
+    example: "27 Februari 2025",
   }),
 });
 

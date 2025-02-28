@@ -1,3 +1,4 @@
+import { fetch } from "bun";
 import { load } from "cheerio";
 import type { CheerioAPI } from "cheerio";
 

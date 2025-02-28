@@ -21,6 +21,6 @@ export const apiRoutes = new Elysia({ prefix: "/api" })
       },
     }
   )
-  .use(mandiriRoutes)
   .use(bcaRoutes)
-  .use(biRoutes);
+  .use(biRoutes)
+  .use(mandiriRoutes);

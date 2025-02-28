@@ -1,3 +1,4 @@
+import { fetch } from "bun";
 import { load } from "cheerio";
 
 const BCA_URL = "https://www.bca.co.id/en/informasi/kurs";
