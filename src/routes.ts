@@ -7,12 +7,12 @@ import { bniRoutes } from "./features/bni";
 export const apiRoutes = new Elysia({ prefix: "/api" })
   .get(
     "/",
-    ({ server }) => {
+    () => {
       return {
         name: "IDR Exchange Rates API",
         version: process.env.npm_package_version,
         author: "k-ardliyan",
-        documentation: `${server?.url}docs`,
+        documentation: "/docs",
         repository: "https://github.com/k-ardliyan/idr-exchange-rates",
       };
     },

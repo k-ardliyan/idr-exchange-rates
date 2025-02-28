@@ -33,7 +33,7 @@ const app = new Elysia()
           },
           version: process.env.npm_package_version || "1.0.0",
           description:
-            "API for fetching Indonesian Rupiah exchange rates from multiple banks\nhttps://github.com/k-ardliyan/idr-exchange-rates-api",
+            "API for fetching Indonesian Rupiah exchange rates from multiple banks\nhttps://github.com/k-ardliyan/idr-exchange-rates",
         },
       },
     })
