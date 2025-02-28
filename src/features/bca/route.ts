@@ -1,18 +1,23 @@
 import { Elysia } from "elysia";
-import { scrapeMandiri } from "../services/scrapers/mandiri";
-import { SuccessResponseSchema, ErrorResponseSchema } from "../schemas/mandiri";
+import { scrapeBCA } from "./scraper";
+import { SuccessResponseSchema, ErrorResponseSchema } from "./schema";
 
-export const mandiriRoutes = new Elysia().get(
-  "/mandiri",
+export const bcaRoutes = new Elysia().get(
+  "/bca",
   async ({ set }) => {
     try {
-      const rates = await scrapeMandiri();
+      const { rates, sourceUrl, rateDates } = await scrapeBCA();
+
       return {
         success: true,
         message: "Exchange rates retrieved successfully",
         data: {
-          source: "Bank Mandiri",
-          timestamp: new Date().toISOString(),
+          source: {
+            name: "Bank BCA",
+            url: sourceUrl,
+          },
+          scrapedAt: new Date().toISOString(),
+          rateDates,
           rates,
         },
       };
@@ -25,7 +30,7 @@ export const mandiriRoutes = new Elysia().get(
 
       return {
         success: false,
-        message: "Failed to fetch exchange rates from Bank Mandiri",
+        message: "Failed to fetch exchange rates from Bank BCA",
         error: {
           type: errorType,
           detail:
@@ -41,9 +46,9 @@ export const mandiriRoutes = new Elysia().get(
       500: ErrorResponseSchema,
     },
     detail: {
-      summary: "Bank Mandiri Exchange Rates",
+      summary: "BCA Exchange Rates",
       description:
-        "Retrieves the latest exchange rates from Bank Mandiri's website, including special rates, TT counter rates, and bank notes rates for multiple currencies.",
+        "Retrieves the latest exchange rates from BCA's website, including e-Rate, TT counter rates, and bank notes rates for multiple currencies.",
     },
   }
 );

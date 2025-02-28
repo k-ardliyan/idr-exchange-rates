@@ -1,19 +1,23 @@
 import { Elysia } from "elysia";
-import { scrapeBCA } from "../services/scrapers/bca";
-import { SuccessResponseSchema, ErrorResponseSchema } from "../schemas/bca";
+import { scrapeBNI } from "./scraper";
+import { SuccessResponseSchema, ErrorResponseSchema } from "./schema";
 
-export const bcaRoutes = new Elysia().get(
-  "/bca",
+export const bniRoutes = new Elysia().get(
+  "/bni",
   async ({ set }) => {
     try {
-      const rates = await scrapeBCA();
+      const { rates, sourceUrl, rateDates } = await scrapeBNI();
 
       return {
         success: true,
         message: "Exchange rates retrieved successfully",
         data: {
-          source: "Bank BCA",
-          timestamp: new Date().toISOString(),
+          source: {
+            name: "Bank BNI",
+            url: sourceUrl,
+          },
+          scrapedAt: new Date().toISOString(),
+          rateDates,
           rates,
         },
       };
@@ -26,7 +30,7 @@ export const bcaRoutes = new Elysia().get(
 
       return {
         success: false,
-        message: "Failed to fetch exchange rates from Bank BCA",
+        message: "Failed to fetch exchange rates from Bank BNI",
         error: {
           type: errorType,
           detail:
@@ -42,9 +46,9 @@ export const bcaRoutes = new Elysia().get(
       500: ErrorResponseSchema,
     },
     detail: {
-      summary: "BCA Exchange Rates",
+      summary: "BNI Exchange Rates",
       description:
-        "Retrieves the latest exchange rates from BCA's website, including e-Rate, TT counter rates, and bank notes rates for multiple currencies.",
+        "Retrieves the latest exchange rates from BNI's website, including special rates, TT counter rates, and bank notes rates for multiple currencies.",
     },
   }
 );

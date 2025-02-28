@@ -15,8 +15,8 @@ const ExchangeRateSchema = t.Object({
       example: 16540,
     }),
     date: t.String({
-      description: "Date when the special rate was updated",
-      example: "27/02/25 - 10:00 WIB",
+      description: "Date when the special rate was updated in ISO format",
+      example: "2025-02-27T03:00:00.000Z",
     }),
   }),
   ttCounter: t.Object({
@@ -29,8 +29,8 @@ const ExchangeRateSchema = t.Object({
       example: 16625,
     }),
     date: t.String({
-      description: "Date when the TT Counter rate was updated",
-      example: "27/02/25 - 10:00 WIB",
+      description: "Date when the TT Counter rate was updated in ISO format",
+      example: "2025-02-27T03:00:00.000Z",
     }),
   }),
   bankNotes: t.Object({
@@ -43,20 +43,40 @@ const ExchangeRateSchema = t.Object({
       example: 16625,
     }),
     date: t.String({
-      description: "Date when the Bank Notes rate was updated",
-      example: "27/02/25 - 10:00 WIB",
+      description: "Date when the Bank Notes rate was updated in ISO format",
+      example: "2025-02-27T03:00:00.000Z",
     }),
   }),
 });
 
 const DataSchema = t.Object({
-  source: t.String({
-    description: "Source bank of the exchange rates",
-    example: "Bank Mandiri",
+  source: t.Object({
+    name: t.String({
+      description: "Source bank name of the exchange rates",
+      example: "Bank Mandiri",
+    }),
+    url: t.String({
+      description: "URL from which the data was scraped",
+      example: "https://www.bankmandiri.co.id/kurs",
+    }),
   }),
-  timestamp: t.String({
+  scrapedAt: t.String({
     description: "Timestamp of when the data was fetched",
-    example: "2025-02-27T12:00:00Z",
+    example: "2025-02-27T12:00:00.000Z",
+  }),
+  rateDates: t.Object({
+    specialRate: t.String({
+      description: "Date of the special rate in ISO format",
+      example: "2025-02-27T03:00:00.000Z",
+    }),
+    ttCounter: t.String({
+      description: "Date of the TT Counter rate in ISO format",
+      example: "2025-02-27T03:00:00.000Z",
+    }),
+    bankNotes: t.String({
+      description: "Date of the Bank Notes rate in ISO format",
+      example: "2025-02-27T03:00:00.000Z",
+    }),
   }),
   rates: t.Array(ExchangeRateSchema),
 });

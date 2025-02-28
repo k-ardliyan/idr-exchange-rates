@@ -22,6 +22,52 @@ interface ExchangeRate {
   };
 }
 
+// Convert BCA date format "27 Feb 2025 / 10:00 WIB" to ISO format
+const convertToISODate = (dateStr: string): string => {
+  try {
+    if (!dateStr) return "";
+
+    // Parse the date string - format: "27 Feb 2025 / 10:00 WIB"
+    const regex =
+      /(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})\s*\/\s*(\d{1,2}):(\d{2})\s*WIB/;
+    const match = dateStr.match(regex);
+
+    if (!match) return "";
+
+    const [_, day, month, year, hour, minute] = match;
+
+    // Map month names to numbers
+    const months: Record<string, string> = {
+      Jan: "01",
+      Feb: "02",
+      Mar: "03",
+      Apr: "04",
+      May: "05",
+      Jun: "06",
+      Jul: "07",
+      Aug: "08",
+      Sep: "09",
+      Oct: "10",
+      Nov: "11",
+      Dec: "12",
+    };
+
+    const monthNum = months[month];
+
+    if (!monthNum) return "";
+
+    // Format the ISO string with the +07:00 timezone offset (WIB)
+    const dayPadded = parseInt(day).toString().padStart(2, "0");
+    const hourPadded = parseInt(hour).toString().padStart(2, "0");
+    const minutePadded = parseInt(minute).toString().padStart(2, "0");
+
+    return `${year}-${monthNum}-${dayPadded}T${hourPadded}:${minutePadded}:00+07:00`;
+  } catch (e) {
+    console.error("Error converting date:", e);
+    return "";
+  }
+};
+
 export const scrapeBCA = async () => {
   const response = await fetch(BCA_URL);
   const html = await response.text();
@@ -44,6 +90,11 @@ export const scrapeBCA = async () => {
   const eRateDate = extractDate("ERate");
   const ttCounterDate = extractDate("TT");
   const bankNotesDate = extractDate("BN");
+
+  // Convert dates to ISO format
+  const eRateISO = convertToISODate(eRateDate);
+  const ttCounterISO = convertToISODate(ttCounterDate);
+  const bankNotesISO = convertToISODate(bankNotesDate);
 
   // Extract rates from table rows
   $("table.m-table-kurs tbody tr").each((_, el) => {
@@ -78,20 +129,28 @@ export const scrapeBCA = async () => {
       eRate: {
         buy: eRateBuy,
         sell: eRateSell,
-        date: eRateDate,
+        date: eRateISO,
       },
       ttCounter: {
         buy: ttCounterBuy,
         sell: ttCounterSell,
-        date: ttCounterDate,
+        date: ttCounterISO,
       },
       bankNotes: {
         buy: bankNotesBuy,
         sell: bankNotesSell,
-        date: bankNotesDate,
+        date: bankNotesISO,
       },
     });
   });
 
-  return rates;
+  return {
+    sourceUrl: BCA_URL,
+    rates,
+    rateDates: {
+      eRate: eRateISO,
+      ttCounter: ttCounterISO,
+      bankNotes: bankNotesISO,
+    },
+  };
 };

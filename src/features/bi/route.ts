@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
-import { scrapeBI } from "../services/scrapers/bi";
-import { SuccessResponseSchema, ErrorResponseSchema } from "../schemas/bi";
+import { scrapeBI } from "./scraper";
+import { SuccessResponseSchema, ErrorResponseSchema } from "./schema";
 
 export const biRoutes = new Elysia().get(
   "/bi",

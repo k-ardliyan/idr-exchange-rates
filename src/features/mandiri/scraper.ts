@@ -22,6 +22,34 @@ interface ExchangeRate {
   };
 }
 
+// Convert date from "DD/MM/YY - HH:MM WIB" to ISO format "YYYY-MM-DDTHH:MM:SS.SSSZ"
+const convertToISODate = (dateStr: string): string => {
+  try {
+    if (!dateStr) return "";
+
+    // Parse the date string - format: "28/02/25 - 09:00 WIB"
+    const regex = /(\d{2})\/(\d{2})\/(\d{2})\s*-\s*(\d{2}):(\d{2})\s*WIB/;
+    const match = dateStr.match(regex);
+
+    if (!match) return "";
+
+    const [_, day, month, year, hour, minute] = match;
+
+    // Format the ISO string manually to correctly represent WIB timezone (UTC+7)
+    const fullYear = 2000 + parseInt(year);
+    const monthPadded = parseInt(month).toString().padStart(2, "0");
+    const dayPadded = parseInt(day).toString().padStart(2, "0");
+    const hourPadded = parseInt(hour).toString().padStart(2, "0");
+    const minutePadded = parseInt(minute).toString().padStart(2, "0");
+
+    // Create ISO string with the +07:00 timezone offset
+    return `${fullYear}-${monthPadded}-${dayPadded}T${hourPadded}:${minutePadded}:00+07:00`;
+  } catch (e) {
+    console.error("Error converting date:", e);
+    return "";
+  }
+};
+
 export const scrapeMandiri = async () => {
   const response = await fetch(MANDIRI_URL);
   const html = await response.text();
@@ -65,6 +93,11 @@ export const scrapeMandiri = async () => {
   const ttCounterDate = extractDate(2); // Index 2 is "TT Counter"
   const bankNotesDate = extractDate(3); // Index 3 is "Bank Notes"
 
+  // Convert dates to ISO format
+  const specialRateISO = convertToISODate(specialRateDate);
+  const ttCounterISO = convertToISODate(ttCounterDate);
+  const bankNotesISO = convertToISODate(bankNotesDate);
+
   $("table tbody tr").each((_, el) => {
     const tds = $(el).find("td");
 
@@ -99,20 +132,28 @@ export const scrapeMandiri = async () => {
       specialRate: {
         buy: specialRateBuy,
         sell: specialRateSell,
-        date: specialRateDate,
+        date: specialRateISO,
       },
       ttCounter: {
         buy: ttCounterBuy,
         sell: ttCounterSell,
-        date: ttCounterDate,
+        date: ttCounterISO,
       },
       bankNotes: {
         buy: bankNotesBuy,
         sell: bankNotesSell,
-        date: bankNotesDate,
+        date: bankNotesISO,
       },
     });
   });
 
-  return rates;
+  return {
+    sourceUrl: MANDIRI_URL,
+    rates,
+    rateDates: {
+      specialRate: specialRateISO,
+      ttCounter: ttCounterISO,
+      bankNotes: bankNotesISO,
+    },
+  };
 };

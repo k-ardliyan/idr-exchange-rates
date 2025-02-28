@@ -37,6 +37,30 @@ const parseNumber = (text: string): number => {
   return parseFloat(cleanText.replace(/,/g, ""));
 };
 
+/**
+ * Convert BNI date format "28-02-2025 15:35 WIB (GMT+07:00)" to ISO format
+ */
+const convertToISODate = (dateStr: string): string => {
+  try {
+    if (!dateStr) return "";
+
+    // Improved regex to capture full format including timezone
+    const regex =
+      /(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})\s+WIB\s+\(GMT\+(\d{2}):(\d{2})\)/;
+    const match = dateStr.match(regex);
+
+    if (!match) return "";
+
+    const [_, day, month, year, hour, minute, offsetHour, offsetMinute] = match;
+
+    // Construct ISO format correctly
+    return `${year}-${month}-${day}T${hour}:${minute}:00+${offsetHour}:${offsetMinute}`;
+  } catch (e) {
+    console.error("Error converting date:", e);
+    return "";
+  }
+};
+
 export const scrapeBNI = async () => {
   try {
     const response = await fetch(BNI_URL);
@@ -61,6 +85,11 @@ export const scrapeBNI = async () => {
       .text()
       .replace("Last Updated:", "")
       .trim();
+
+    // Convert dates to ISO format
+    const specialRateISO = convertToISODate(specialRateDate);
+    const ttCounterISO = convertToISODate(ttCounterDate);
+    const bankNotesISO = convertToISODate(bankNotesDate);
 
     // Get all currency rows from the tables
     const specialRateRows = $(
@@ -121,17 +150,17 @@ export const scrapeBNI = async () => {
         specialRate: {
           buy: specialRateBuy,
           sell: specialRateSell,
-          date: specialRateDate,
+          date: specialRateISO,
         },
         ttCounter: {
           buy: ttCounterBuy,
           sell: ttCounterSell,
-          date: ttCounterDate,
+          date: ttCounterISO,
         },
         bankNotes: {
           buy: bankNotesBuy,
           sell: bankNotesSell,
-          date: bankNotesDate,
+          date: bankNotesISO,
         },
       });
     });
@@ -178,19 +207,35 @@ export const scrapeBNI = async () => {
         ttCounter: {
           buy: ttCounterBuy,
           sell: ttCounterSell,
-          date: ttCounterDate,
+          date: ttCounterISO,
         },
         bankNotes: {
           buy: bankNotesBuy,
           sell: bankNotesSell,
-          date: bankNotesDate,
+          date: bankNotesISO,
         },
       });
     });
 
-    return rates;
+    return {
+      sourceUrl: BNI_URL,
+      rates,
+      rateDates: {
+        specialRate: specialRateISO,
+        ttCounter: ttCounterISO,
+        bankNotes: bankNotesISO,
+      },
+    };
   } catch (error) {
     console.error("Error scraping BNI rates:", error);
-    return [];
+    return {
+      sourceUrl: BNI_URL,
+      rates: [],
+      rateDates: {
+        specialRate: "",
+        ttCounter: "",
+        bankNotes: "",
+      },
+    };
   }
 };

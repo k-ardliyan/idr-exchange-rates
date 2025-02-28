@@ -15,8 +15,8 @@ const ExchangeRateSchema = t.Object({
       example: 16575,
     }),
     date: t.String({
-      description: "Date when the e-Rate was updated",
-      example: "27 Feb 2025 / 10:00 WIB",
+      description: "Date when the e-Rate was updated in ISO format",
+      example: "2025-02-27T10:00:00+07:00",
     }),
   }),
   ttCounter: t.Object({
@@ -29,8 +29,8 @@ const ExchangeRateSchema = t.Object({
       example: 16685,
     }),
     date: t.String({
-      description: "Date when the TT Counter rate was updated",
-      example: "27 Feb 2025 / 10:00 WIB",
+      description: "Date when the TT Counter rate was updated in ISO format",
+      example: "2025-02-27T10:00:00+07:00",
     }),
   }),
   bankNotes: t.Object({
@@ -43,20 +43,40 @@ const ExchangeRateSchema = t.Object({
       example: 16685,
     }),
     date: t.String({
-      description: "Date when the Bank Notes rate was updated",
-      example: "27 Feb 2025 / 10:00 WIB",
+      description: "Date when the Bank Notes rate was updated in ISO format",
+      example: "2025-02-27T10:00:00+07:00",
     }),
   }),
 });
 
 const DataSchema = t.Object({
-  source: t.String({
-    description: "Source bank of the exchange rates",
-    example: "Bank BCA",
+  source: t.Object({
+    name: t.String({
+      description: "Source bank name of the exchange rates",
+      example: "Bank BCA",
+    }),
+    url: t.String({
+      description: "URL from which the data was scraped",
+      example: "https://www.bca.co.id/en/informasi/kurs",
+    }),
   }),
-  timestamp: t.String({
+  scrapedAt: t.String({
     description: "Timestamp of when the data was fetched",
-    example: "2025-02-27T12:00:00Z",
+    example: "2025-02-27T12:00:00.000Z",
+  }),
+  rateDates: t.Object({
+    eRate: t.String({
+      description: "Date of the e-Rate in ISO format",
+      example: "2025-02-27T10:00:00+07:00",
+    }),
+    ttCounter: t.String({
+      description: "Date of the TT Counter rate in ISO format",
+      example: "2025-02-27T10:00:00+07:00",
+    }),
+    bankNotes: t.String({
+      description: "Date of the Bank Notes rate in ISO format",
+      example: "2025-02-27T10:00:00+07:00",
+    }),
   }),
   rates: t.Array(ExchangeRateSchema),
 });
@@ -79,20 +99,20 @@ const ErrorResponseSchema = t.Object({
     example: false,
   }),
   message: t.String({
-    description: "Error message description",
+    description: "Response message",
     example: "Failed to fetch exchange rates from Bank BCA",
   }),
   error: t.Object({
     type: t.String({
       description: "Type of error that occurred",
-      example: "TimeoutError",
+      example: "NetworkError",
     }),
     detail: t.String({
-      description: "Detailed error information",
-      example: "Request took too long to respond",
+      description: "Detailed error message",
+      example: "Failed to connect to the server",
     }),
     code: t.Number({
-      description: "HTTP status code",
+      description: "HTTP status code associated with the error",
       example: 500,
     }),
   }),

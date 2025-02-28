@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
-import { swagger } from "@elysiajs/swagger";
 import { apiRoutes } from "./routes";
+import swagger from "@elysiajs/swagger";
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -31,7 +31,7 @@ const app = new Elysia()
             name: "k-ardliyan",
             url: "https://github.com/k-ardliyan",
           },
-          version: "1.0.0",
+          version: process.env.npm_package_version || "1.0.0",
           description:
             "API for fetching Indonesian Rupiah exchange rates from multiple banks\nhttps://github.com/k-ardliyan/idr-exchange-rates-api",
         },

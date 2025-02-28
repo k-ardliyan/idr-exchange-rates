@@ -1,18 +1,23 @@
 import { Elysia } from "elysia";
-import { scrapeBNI } from "../services/scrapers/bni";
-import { SuccessResponseSchema, ErrorResponseSchema } from "../schemas/bni";
+import { scrapeMandiri } from "./scraper";
+import { SuccessResponseSchema, ErrorResponseSchema } from "./schema";
 
-export const bniRoutes = new Elysia().get(
-  "/bni",
+export const mandiriRoutes = new Elysia().get(
+  "/mandiri",
   async ({ set }) => {
     try {
-      const rates = await scrapeBNI();
+      const { rates, sourceUrl, rateDates } = await scrapeMandiri();
+
       return {
         success: true,
         message: "Exchange rates retrieved successfully",
         data: {
-          source: "Bank BNI",
-          timestamp: new Date().toISOString(),
+          source: {
+            name: "Bank Mandiri",
+            url: sourceUrl,
+          },
+          scrapedAt: new Date().toISOString(),
+          rateDates,
           rates,
         },
       };
@@ -25,7 +30,7 @@ export const bniRoutes = new Elysia().get(
 
       return {
         success: false,
-        message: "Failed to fetch exchange rates from Bank BNI",
+        message: "Failed to fetch exchange rates from Bank Mandiri",
         error: {
           type: errorType,
           detail:
@@ -41,9 +46,9 @@ export const bniRoutes = new Elysia().get(
       500: ErrorResponseSchema,
     },
     detail: {
-      summary: "BNI Exchange Rates",
+      summary: "Bank Mandiri Exchange Rates",
       description:
-        "Retrieves the latest exchange rates from BNI's website, including special rates, TT counter rates, and bank notes rates for multiple currencies.",
+        "Retrieves the latest exchange rates from Bank Mandiri's website, including special rates, TT counter rates, and bank notes rates for multiple currencies.",
     },
   }
 );
