@@ -23,8 +23,8 @@
     "bun-types": "latest"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "bun": ">=1.0.0"
+    "node": "latest",
+    "bun": "latest"
   },
   "repository": {
     "type": "git",
