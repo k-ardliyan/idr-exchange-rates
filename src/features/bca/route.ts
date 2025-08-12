@@ -1,12 +1,15 @@
 import { Elysia } from "elysia";
 import { scrapeBCA } from "./scraper";
 import { SuccessResponseSchema, ErrorResponseSchema } from "./schema";
+import { withTimeout, mapErrorToHttp } from "../../utils/errors";
 
 export const bcaRoutes = new Elysia().get(
   "/bca",
   async ({ set }) => {
     try {
-      const { rates, sourceUrl, rateDates } = await scrapeBCA();
+      const { rates, sourceUrl, rateDates } = await withTimeout(
+        scrapeBCA()
+      );
 
       return {
         success: true,
@@ -22,20 +25,15 @@ export const bcaRoutes = new Elysia().get(
         },
       };
     } catch (error) {
-      set.status = 500;
-
-      // Create the structured error object
-      const errorType =
-        error instanceof Error ? error.constructor.name : "UnknownError";
-
+      const mapped = mapErrorToHttp(error);
+      set.status = mapped.status;
       return {
         success: false,
         message: "Failed to fetch exchange rates from Bank BCA",
         error: {
-          type: errorType,
-          detail:
-            error instanceof Error ? error.message : "Unknown error occurred",
-          code: 500,
+          type: mapped.type,
+          detail: mapped.detail,
+          code: mapped.status,
         },
       };
     }
@@ -44,6 +42,8 @@ export const bcaRoutes = new Elysia().get(
     response: {
       200: SuccessResponseSchema,
       500: ErrorResponseSchema,
+      502: ErrorResponseSchema,
+      504: ErrorResponseSchema,
     },
     detail: {
       summary: "BCA Exchange Rates",

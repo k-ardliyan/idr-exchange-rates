@@ -1,12 +1,13 @@
 import { Elysia } from "elysia";
 import { scrapeBI } from "./scraper";
 import { SuccessResponseSchema, ErrorResponseSchema } from "./schema";
+import { withTimeout, mapErrorToHttp } from "../../utils/errors";
 
 export const biRoutes = new Elysia().get(
   "/bi",
   async ({ set }) => {
     try {
-      const rates = await scrapeBI();
+      const rates = await withTimeout(scrapeBI());
       return {
         success: true,
         message: "Exchange rates retrieved successfully",
@@ -17,20 +18,15 @@ export const biRoutes = new Elysia().get(
         },
       };
     } catch (error) {
-      set.status = 500;
-
-      // Create the structured error object
-      const errorType =
-        error instanceof Error ? error.constructor.name : "UnknownError";
-
+      const mapped = mapErrorToHttp(error);
+      set.status = mapped.status;
       return {
         success: false,
         message: "Failed to fetch exchange rates from Bank Indonesia",
         error: {
-          type: errorType,
-          detail:
-            error instanceof Error ? error.message : "Unknown error occurred",
-          code: 500,
+          type: mapped.type,
+          detail: mapped.detail,
+          code: mapped.status,
         },
       };
     }
@@ -39,6 +35,8 @@ export const biRoutes = new Elysia().get(
     response: {
       200: SuccessResponseSchema,
       500: ErrorResponseSchema,
+      502: ErrorResponseSchema,
+      504: ErrorResponseSchema,
     },
     detail: {
       summary: "Bank Indonesia Exchange Rates",

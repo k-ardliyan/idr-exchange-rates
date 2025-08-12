@@ -1,6 +1,6 @@
-import { fetch } from "bun";
 import { load } from "cheerio";
 import type { CheerioAPI } from "cheerio";
+import { politeFetch } from "../../utils/scraper";
 
 const BI_URL =
   "https://www.bi.go.id/id/statistik/informasi-kurs/transaksi-bi/default.aspx";
@@ -24,7 +24,7 @@ export const scrapeBI = async (
 ): Promise<BIExchangeRate[]> => {
   try {
     // First request to get the form tokens
-    const initialResponse = await fetch(BI_URL);
+    const initialResponse = await politeFetch(BI_URL);
     const html = await initialResponse.text();
     const $ = load(html);
 

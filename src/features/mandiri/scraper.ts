@@ -1,5 +1,5 @@
-import { fetch } from "bun";
 import { load } from "cheerio";
+import { politeFetch } from "../../utils/scraper";
 
 const MANDIRI_URL = "https://www.bankmandiri.co.id/kurs";
 
@@ -51,7 +51,7 @@ const convertToISODate = (dateStr: string): string => {
 };
 
 export const scrapeMandiri = async () => {
-  const response = await fetch(MANDIRI_URL);
+  const response = await politeFetch(MANDIRI_URL);
   const html = await response.text();
   const $ = load(html);
 

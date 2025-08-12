@@ -1,5 +1,5 @@
-import { fetch } from "bun";
 import { load } from "cheerio";
+import { politeFetch } from "../../utils/scraper";
 
 const BCA_URL = "https://www.bca.co.id/en/informasi/kurs";
 
@@ -69,7 +69,7 @@ const convertToISODate = (dateStr: string): string => {
 };
 
 export const scrapeBCA = async () => {
-  const response = await fetch(BCA_URL);
+  const response = await politeFetch(BCA_URL);
   const html = await response.text();
   const $ = load(html);
 

@@ -1,5 +1,5 @@
-import { fetch } from "bun";
 import { load } from "cheerio";
+import { politeFetch } from "../../utils/scraper";
 
 const BNI_URL = "https://www.bni.co.id/en-us/home/forex-information";
 
@@ -63,7 +63,7 @@ const convertToISODate = (dateStr: string): string => {
 
 export const scrapeBNI = async () => {
   try {
-    const response = await fetch(BNI_URL);
+    const response = await politeFetch(BNI_URL);
     const html = await response.text();
     const $ = load(html);
 

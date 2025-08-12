@@ -1,12 +1,15 @@
 import { Elysia } from "elysia";
 import { scrapeMandiri } from "./scraper";
 import { SuccessResponseSchema, ErrorResponseSchema } from "./schema";
+import { withTimeout, mapErrorToHttp } from "../../utils/errors";
 
 export const mandiriRoutes = new Elysia().get(
   "/mandiri",
   async ({ set }) => {
     try {
-      const { rates, sourceUrl, rateDates } = await scrapeMandiri();
+      const { rates, sourceUrl, rateDates } = await withTimeout(
+        scrapeMandiri()
+      );
 
       return {
         success: true,
@@ -22,20 +25,15 @@ export const mandiriRoutes = new Elysia().get(
         },
       };
     } catch (error) {
-      set.status = 500;
-
-      // Create the structured error object
-      const errorType =
-        error instanceof Error ? error.constructor.name : "UnknownError";
-
+      const mapped = mapErrorToHttp(error);
+      set.status = mapped.status;
       return {
         success: false,
         message: "Failed to fetch exchange rates from Bank Mandiri",
         error: {
-          type: errorType,
-          detail:
-            error instanceof Error ? error.message : "Unknown error occurred",
-          code: 500,
+          type: mapped.type,
+          detail: mapped.detail,
+          code: mapped.status,
         },
       };
     }
@@ -44,6 +42,8 @@ export const mandiriRoutes = new Elysia().get(
     response: {
       200: SuccessResponseSchema,
       500: ErrorResponseSchema,
+      502: ErrorResponseSchema,
+      504: ErrorResponseSchema,
     },
     detail: {
       summary: "Bank Mandiri Exchange Rates",

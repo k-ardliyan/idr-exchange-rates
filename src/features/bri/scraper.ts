@@ -1,5 +1,5 @@
-import { fetch } from "bun";
 import { load } from "cheerio";
+import { politeFetch } from "../../utils/scraper";
 
 const BRI_URL = "https://bri.co.id/kurs-detail";
 
@@ -63,7 +63,7 @@ const convertToISODate = (dateStr: string): string => {
 };
 
 export const scrapeBRI = async () => {
-  const response = await fetch(BRI_URL);
+  const response = await politeFetch(BRI_URL);
   const html = await response.text();
   const $ = load(html);
 

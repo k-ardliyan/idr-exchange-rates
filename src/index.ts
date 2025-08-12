@@ -58,5 +58,6 @@ const app = new Elysia()
           code: 404,
         },
       };
+    console.log(code);
   })
   .listen(port);
