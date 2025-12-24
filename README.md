@@ -2,19 +2,19 @@
 
 # 🏦 IDR Exchange Rates API
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT) [![Made with Bun](https://img.shields.io/badge/Bun-v1.0.+-FBF0DF.svg?logo=bun)](https://bun.sh) [![Powered by TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Built with Elysia](https://img.shields.io/badge/Elysia-Latest-B355F9.svg)](https://elysiajs.com/)
+[![Made with Bun](https://img.shields.io/badge/Bun-v1.0.+-FBF0DF.svg?logo=bun)](https://bun.sh) [![Powered by TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Built with Elysia](https://img.shields.io/badge/Elysia-Latest-B355F9.svg)](https://elysiajs.com/)
 
-A fast, reliable API service providing real-time Indonesian Rupiah (IDR) exchange rates from multiple trusted banking sources.
+A learning project for building an IDR currency exchange rate API using Bun, Elysia, and TypeScript.
 
-[Getting Started](#-getting-started) • [Documentation](#-api-documentation) • [Contributing](#-contributing) • [License](#-license) • [Live Demo](https://idr-exchange-rates.onrender.com/docs)
-
-[![BCA](https://img.shields.io/badge/BCA-blue?style=flat-square&logo=bank&logoColor=white)](https://www.bca.co.id/) [![Bank Indonesia](https://img.shields.io/badge/Bank%20Indonesia-red?style=flat-square&logo=bank&logoColor=white)](https://www.bi.go.id/) [![BNI](https://img.shields.io/badge/BNI-orange?style=flat-square&logo=bank&logoColor=white)](https://www.bni.co.id/) [![BRI](https://img.shields.io/badge/BRI-blue?style=flat-square&logo=bank&logoColor=white)](https://bri.co.id/) [![Mandiri](https://img.shields.io/badge/Mandiri-yellow?style=flat-square&logo=bank&logoColor=white)](https://bankmandiri.co.id/)
+[Getting Started](#-getting-started) • [Documentation](#-api-documentation) • [Tech Stack](#️-tech-stack)
 
 </div>
 
 ## 📖 Overview
 
-IDR Exchange Rates API is an open-source service that collects and provides exchange rates for the Indonesian Rupiah (IDR) from multiple trusted sources. The API is designed to be fast, reliable, and developer-friendly, making it easy to integrate currency exchange data into your applications.
+> **📚 Learning Project**: This repository was created for learning and technology exploration purposes. It is not intended for production use or public interest.
+
+IDR Exchange Rates API is a practice project to learn how to build a simple API that fetches currency exchange rates from various Indonesian banking sources.
 
 ### 🌟 Key Features
 
@@ -69,26 +69,6 @@ The API documentation is available via Swagger UI at `/docs`
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 🙏 Acknowledgements
-
-- Bank Central Asia (BCA) for providing exchange rate data
-- Bank Indonesia for providing exchange rate data
-- Bank Negara Indonesia (BNI) for providing exchange rate data
-- Bank Rakyat Indonesia (BRI) for providing exchange rate data
-- Bank Mandiri for providing exchange rate data
-
 ## ⚠️ Disclaimer
 
-Exchange rate information may not be 100% accurate and should not be used for financial decisions without verification. The developer is not responsible for any financial losses.
-
-## 📧 Contact
-
-For questions or concerns, please open an issue on the GitHub repository.
-
-## 📊 Project Status: Active
-
-File an issue, feature request, or pull request on the GitHub repository if you'd like to contribute!
+This repository was created for learning purposes. The exchange rate data displayed may not be 100% accurate and **should not be used** as a reference for financial decisions. Always verify rates directly from the official bank sources.

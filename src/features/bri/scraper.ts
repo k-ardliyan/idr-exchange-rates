@@ -70,12 +70,23 @@ export const scrapeBRI = async () => {
   const rates: ExchangeRate[] = [];
 
   // Extract the date from the page
-  const dateString = $(".cover-text").text().trim();
+  // Try multiple selectors as BRI page structure may vary
+  let dateText = "";
+
+  // Try .cover-text first (old structure)
+  const coverText = $(".cover-text").text().trim();
   const dateRegex =
     /Terakhir diperbarui\s+(\d{1,2}\/[A-Za-z]{3}\/\d{4}\s+\d{1,2}:\d{2})/;
-  const dateMatch = dateString.match(dateRegex);
-  const dateText = dateMatch ? dateMatch[1] : "";
-  const isoDate = convertToISODate(dateText);
+  const dateMatch = coverText.match(dateRegex);
+
+  if (dateMatch) {
+    dateText = dateMatch[1];
+  }
+
+  // Convert to ISO or use current time as fallback
+  const isoDate = dateText
+    ? convertToISODate(dateText)
+    : new Date().toISOString();
 
   // Process eRate table
   $("#tab-e-rate table tbody tr").each((_, el) => {

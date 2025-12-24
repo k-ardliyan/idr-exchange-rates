@@ -75,21 +75,25 @@ export const scrapeBCA = async () => {
 
   const rates: ExchangeRate[] = [];
 
-  // Get dates from the table headers
-  const extractDate = (rateType: string): string => {
+  // Get dates from the table header spans
+  // Format in HTML: "24 Dec 2025 / 12:47 WIB" inside p.a-header-rate > span.a-text-micro
+  const extractDate = (headerIndex: number): string => {
     try {
-      const labelElement = $(`label[rate-type="${rateType}"]`);
-      const dateText = labelElement.text().trim();
+      // The headers are in order: e-Rate (0), TT Counter (1), Bank Notes (2)
+      const headerSpans = $(
+        "th.header-column p.a-header-rate span.a-text-micro"
+      );
+      const dateText = headerSpans.eq(headerIndex).text().trim();
       return dateText ? `${dateText} WIB` : "";
     } catch (e) {
-      console.error(`Error extracting date for ${rateType}:`, e);
+      console.error(`Error extracting date for header ${headerIndex}:`, e);
       return "";
     }
   };
 
-  const eRateDate = extractDate("ERate");
-  const ttCounterDate = extractDate("TT");
-  const bankNotesDate = extractDate("BN");
+  const eRateDate = extractDate(0);
+  const ttCounterDate = extractDate(1);
+  const bankNotesDate = extractDate(2);
 
   // Convert dates to ISO format
   const eRateISO = convertToISODate(eRateDate);
@@ -97,31 +101,32 @@ export const scrapeBCA = async () => {
   const bankNotesISO = convertToISODate(bankNotesDate);
 
   // Extract rates from table rows
-  $("table.m-table-kurs tbody tr").each((_, el) => {
+  // Row structure: <tr class="m-table-body-row" code="USD">
+  $("table.m-table-kurs tbody tr.m-table-body-row").each((_, el) => {
     const currency = $(el).attr("code") || "";
 
-    // e-Rate
+    // e-Rate - td elements have rate-type attribute
     const eRateBuy = parseFloat(
-      $(el).find('p[rate-type="ERate-buy"]').text().replace(/,/g, "")
+      $(el).find('td[rate-type="eRate-buy"] p').text().replace(/,/g, "")
     );
     const eRateSell = parseFloat(
-      $(el).find('p[rate-type="ERate-sell"]').text().replace(/,/g, "")
+      $(el).find('td[rate-type="eRate-sell"] p').text().replace(/,/g, "")
     );
 
     // TT Counter
     const ttCounterBuy = parseFloat(
-      $(el).find('p[rate-type="TT-buy"]').text().replace(/,/g, "")
+      $(el).find('td[rate-type="TTCounter-buy"] p').text().replace(/,/g, "")
     );
     const ttCounterSell = parseFloat(
-      $(el).find('p[rate-type="TT-sell"]').text().replace(/,/g, "")
+      $(el).find('td[rate-type="TTCounter-sell"] p').text().replace(/,/g, "")
     );
 
     // Bank Notes
     const bankNotesBuy = parseFloat(
-      $(el).find('p[rate-type="BN-buy"]').text().replace(/,/g, "")
+      $(el).find('td[rate-type="BankNotes-buy"] p').text().replace(/,/g, "")
     );
     const bankNotesSell = parseFloat(
-      $(el).find('p[rate-type="BN-sell"]').text().replace(/,/g, "")
+      $(el).find('td[rate-type="BankNotes-sell"] p').text().replace(/,/g, "")
     );
 
     rates.push({
