@@ -41,10 +41,11 @@ cd idr-exchange-rates
 bun install
 ```
 
-- **Development (watch):** `bun run dev` — same as `bun --watch src/index.ts` (auto-reload)
-- **Production build:** `bun run build` — bundles to `dist/index.js` with `--target bun` (recommended in Elysia docs)
-- **Run the bundle:** `bun run start` — sets `NODE_ENV=production` and runs `dist/index.js` (`package.json` scripts use the **Bun shell**, so `NODE_ENV=...` works on Windows too)
-- **Without a build (quick check):** `bun run preview` — runs `src/index.ts` directly with `NODE_ENV=production` (handy for local tests, not the intended deploy path)
+- **Development (watch):** `bun run dev` — runs `src/index.ts` with reload on change
+- **Production / deploy:** `bun run start` — sets `NODE_ENV=production` and runs `src/index.ts` directly (no `dist/` required; works the same on Render and locally)
+- **Optional bundle:** `bun run build` — outputs `dist/index.js` if you want a compiled artifact for other deploy targets
+
+`package.json` scripts are executed with the **Bun shell**, so `NODE_ENV=production` in the `start` script is cross-platform (including Windows).
 
 Default server: `http://localhost:3000` (override with `PORT`).
 
