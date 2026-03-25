@@ -1,4 +1,5 @@
 import { load } from "cheerio";
+import type { Element } from "domhandler";
 import { politeFetch } from "../../utils/scraper";
 
 const BRI_URL = "https://bri.co.id/kurs-detail";
@@ -17,20 +18,27 @@ interface ExchangeRate {
   };
 }
 
-// Convert BRI date format "01/Mar/2025 04:30" to ISO format
+/** BRI uses Indonesian formatting: `16.888,00` (dot thousands, comma decimal). */
+const parseBriAmount = (raw: string): number => {
+  const s = raw.trim().replace(/\s/g, "");
+  if (!s) return NaN;
+  if (/^\d{1,3}(\.\d{3})+,\d{1,4}$/.test(s)) {
+    return parseFloat(s.replace(/\./g, "").replace(",", "."));
+  }
+  if (/^\d{1,3}(,\d{3})*\.\d+$/.test(s)) {
+    return parseFloat(s.replace(/,/g, ""));
+  }
+  const n = parseFloat(s.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(n) ? n : NaN;
+};
+
 const convertToISODate = (dateStr: string): string => {
   try {
     if (!dateStr) return "";
-
-    // Parse the date string - format: "01/Mar/2025 04:30"
     const regex = /(\d{1,2})\/([A-Za-z]{3})\/(\d{4})\s+(\d{1,2}):(\d{2})/;
     const match = dateStr.match(regex);
-
     if (!match) return "";
-
-    const [_, day, month, year, hour, minute] = match;
-
-    // Map month names to numbers
+    const [, day, month, year, hour, minute] = match;
     const months: Record<string, string> = {
       Jan: "01",
       Feb: "02",
@@ -45,16 +53,11 @@ const convertToISODate = (dateStr: string): string => {
       Nov: "11",
       Dec: "12",
     };
-
     const monthNum = months[month];
-
     if (!monthNum) return "";
-
-    // Format the ISO string with the +07:00 timezone offset (WIB)
-    const dayPadded = parseInt(day).toString().padStart(2, "0");
-    const hourPadded = parseInt(hour).toString().padStart(2, "0");
-    const minutePadded = parseInt(minute).toString().padStart(2, "0");
-
+    const dayPadded = parseInt(day, 10).toString().padStart(2, "0");
+    const hourPadded = parseInt(hour, 10).toString().padStart(2, "0");
+    const minutePadded = parseInt(minute, 10).toString().padStart(2, "0");
     return `${year}-${monthNum}-${dayPadded}T${hourPadded}:${minutePadded}:00+07:00`;
   } catch (e) {
     console.error("Error converting date:", e);
@@ -62,105 +65,94 @@ const convertToISODate = (dateStr: string): string => {
   }
 };
 
+const mergeErate = (
+  rates: ExchangeRate[],
+  currency: string,
+  buy: number,
+  sell: number,
+  isoDate: string,
+) => {
+  const existing = rates.find((r) => r.currency === currency);
+  if (existing) {
+    existing.eRate = { buy, sell, date: isoDate };
+  } else {
+    rates.push({
+      currency,
+      eRate: { buy, sell, date: isoDate },
+      ttCounter: { buy: 0, sell: 0, date: isoDate },
+    });
+  }
+};
+
+const mergeTt = (
+  rates: ExchangeRate[],
+  currency: string,
+  buy: number,
+  sell: number,
+  isoDate: string,
+) => {
+  const existing = rates.find((r) => r.currency === currency);
+  if (existing) {
+    existing.ttCounter = { buy, sell, date: isoDate };
+  } else {
+    rates.push({
+      currency,
+      eRate: { buy: 0, sell: 0, date: isoDate },
+      ttCounter: { buy, sell, date: isoDate },
+    });
+  }
+};
+
 export const scrapeBRI = async () => {
   const response = await politeFetch(BRI_URL);
   const html = await response.text();
-  const $ = load(html);
 
+  if (html.length < 8000 || !html.includes("tab-e-rate")) {
+    throw new Error(
+      "BRI: rate page HTML too small or missing tables (blocked or layout changed)",
+    );
+  }
+
+  const $ = load(html);
   const rates: ExchangeRate[] = [];
 
-  // Extract the date from the page
-  // Try multiple selectors as BRI page structure may vary
   let dateText = "";
-
-  // Try .cover-text first (old structure)
   const coverText = $(".cover-text").text().trim();
   const dateRegex =
     /Terakhir diperbarui\s+(\d{1,2}\/[A-Za-z]{3}\/\d{4}\s+\d{1,2}:\d{2})/;
   const dateMatch = coverText.match(dateRegex);
+  if (dateMatch) dateText = dateMatch[1];
 
-  if (dateMatch) {
-    dateText = dateMatch[1];
-  }
-
-  // Convert to ISO or use current time as fallback
   const isoDate = dateText
     ? convertToISODate(dateText)
     : new Date().toISOString();
 
-  // Process eRate table
-  $("#tab-e-rate table tbody tr").each((_, el) => {
-    const currency = $(el).find(".box-country .text").text().trim();
+  const rowHandler = (el: Element, kind: "eRate" | "ttCounter") => {
+    const row = $(el);
+    const currency = row.find(".box-country .text").text().trim();
+    if (!currency) return;
 
-    // e-Rate values
-    const eRateBuy = parseFloat(
-      $(el).find("td").eq(1).text().replace(/\./g, "").replace(",", ".")
-    );
-    const eRateSell = parseFloat(
-      $(el).find("td").eq(2).text().replace(/\./g, "").replace(",", ".")
-    );
+    const buy = parseBriAmount(row.find("td").eq(1).text());
+    const sell = parseBriAmount(row.find("td").eq(2).text());
+    if (!Number.isFinite(buy) || !Number.isFinite(sell)) return;
 
-    const existingRate = rates.find((rate) => rate.currency === currency);
-
-    if (existingRate) {
-      existingRate.eRate = {
-        buy: eRateBuy,
-        sell: eRateSell,
-        date: isoDate,
-      };
+    if (kind === "eRate") {
+      mergeErate(rates, currency, buy, sell, isoDate);
     } else {
-      rates.push({
-        currency,
-        eRate: {
-          buy: eRateBuy,
-          sell: eRateSell,
-          date: isoDate,
-        },
-        ttCounter: {
-          buy: 0,
-          sell: 0,
-          date: isoDate,
-        },
-      });
+      mergeTt(rates, currency, buy, sell, isoDate);
     }
-  });
+  };
 
-  // Process ttCounter table
-  $("#tab-tt-counter table tbody tr").each((_, el) => {
-    const currency = $(el).find(".box-country .text").text().trim();
+  $("#tab-e-rate table tbody tr").each((_, el) => rowHandler(el, "eRate"));
+  $("#tab-tt-counter table tbody tr").each((_, el) =>
+    rowHandler(el, "ttCounter"),
+  );
 
-    // TT Counter values
-    const ttCounterBuy = parseFloat(
-      $(el).find("td").eq(1).text().replace(/\./g, "").replace(",", ".")
+  if (rates.length === 0) {
+    throw new Error(
+      "BRI: no currency rows parsed (selectors or format may have changed)",
     );
-    const ttCounterSell = parseFloat(
-      $(el).find("td").eq(2).text().replace(/\./g, "").replace(",", ".")
-    );
-
-    const existingRate = rates.find((rate) => rate.currency === currency);
-
-    if (existingRate) {
-      existingRate.ttCounter = {
-        buy: ttCounterBuy,
-        sell: ttCounterSell,
-        date: isoDate,
-      };
-    } else {
-      rates.push({
-        currency,
-        eRate: {
-          buy: 0,
-          sell: 0,
-          date: isoDate,
-        },
-        ttCounter: {
-          buy: ttCounterBuy,
-          sell: ttCounterSell,
-          date: isoDate,
-        },
-      });
-    }
-  });
+  }
 
   return {
     sourceUrl: BRI_URL,

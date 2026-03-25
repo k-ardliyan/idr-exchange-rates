@@ -1,3 +1,5 @@
+import { HTTP_TIMEOUT_MS } from "../constants/timeouts";
+
 type PoliteOptions = RequestInit & {
   retries?: number;
   minDelayMs?: number;
@@ -23,20 +25,25 @@ const randomJitter = (minMs: number, maxMs: number) =>
   Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
 
 const isRetryableStatus = (status: number) =>
-  status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+  status === 429 ||
+  status === 500 ||
+  status === 502 ||
+  status === 503 ||
+  status === 504;
 
 const parseRetryAfter = (headerValue: string | null): number | null => {
   if (!headerValue) return null;
   const seconds = Number(headerValue);
   if (!Number.isNaN(seconds)) return seconds * 1000;
   const date = new Date(headerValue);
-  if (!Number.isNaN(date.getTime())) return Math.max(0, date.getTime() - Date.now());
+  if (!Number.isNaN(date.getTime()))
+    return Math.max(0, date.getTime() - Date.now());
   return null;
 };
 
 export const politeFetch = async (
   url: string,
-  options: PoliteOptions = {}
+  options: PoliteOptions = {},
 ): Promise<Response> => {
   const {
     retries = 3,
@@ -44,13 +51,19 @@ export const politeFetch = async (
     maxDelayMs = 1200,
     backoffMs = 500,
     maxBackoffMs = 8000,
-    timeoutMs = 10000,
+    timeoutMs = HTTP_TIMEOUT_MS,
     headers,
     ...init
   } = options;
 
+  const origin = new URL(url).origin;
   const mergedHeaders: HeadersInit = {
     ...DEFAULT_HEADERS,
+    Referer: `${origin}/`,
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
+    "Upgrade-Insecure-Requests": "1",
     ...(headers || {}),
   };
 
@@ -86,10 +99,10 @@ export const politeFetch = async (
           new Error(
             `Request failed with status ${response.status}: ${bodySnippet.slice(
               0,
-              200
-            )}`
+              200,
+            )}`,
           ),
-          { name: "UpstreamHttpError", status: response.status }
+          { name: "UpstreamHttpError", status: response.status },
         );
         throw upstreamError;
       }
@@ -120,5 +133,3 @@ export const politeFetch = async (
 };
 
 export const defaultScraperHeaders = DEFAULT_HEADERS;
-
-

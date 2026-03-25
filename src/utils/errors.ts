@@ -1,3 +1,5 @@
+import { SCRAPE_TIMEOUT_MS } from "../constants/timeouts";
+
 export class TimeoutError extends Error {
   constructor(message: string = "Operation timed out") {
     super(message);
@@ -7,15 +9,18 @@ export class TimeoutError extends Error {
 
 export const withTimeout = async <T>(
   promise: Promise<T>,
-  milliseconds: number = 10000
+  milliseconds: number = SCRAPE_TIMEOUT_MS,
 ): Promise<T> => {
   return await Promise.race<T>([
     promise,
     new Promise<T>((_, reject) =>
       setTimeout(
-        () => reject(new TimeoutError(`Operation timed out after ${milliseconds}ms`)),
-        milliseconds
-      )
+        () =>
+          reject(
+            new TimeoutError(`Operation timed out after ${milliseconds}ms`),
+          ),
+        milliseconds,
+      ),
     ),
   ]);
 };
@@ -35,7 +40,11 @@ export const mapErrorToHttp = (error: unknown): MappedHttpError => {
 
   // If upstream already provided explicit HTTP status, respect it
   const explicitStatus: unknown = err?.status;
-  if (typeof explicitStatus === "number" && explicitStatus >= 100 && explicitStatus <= 599) {
+  if (
+    typeof explicitStatus === "number" &&
+    explicitStatus >= 100 &&
+    explicitStatus <= 599
+  ) {
     return {
       status: explicitStatus,
       type: name || "UpstreamHttpError",
@@ -84,12 +93,14 @@ export const mapErrorToHttp = (error: unknown): MappedHttpError => {
   if (match) {
     const inferred = Number(match[1]);
     if (!Number.isNaN(inferred) && inferred >= 100 && inferred <= 599) {
-      return { status: inferred, type: name || "UpstreamHttpError", detail: message };
+      return {
+        status: inferred,
+        type: name || "UpstreamHttpError",
+        detail: message,
+      };
     }
   }
 
   // Default -> Internal Server Error
   return { status: 500, type: name, detail: message };
 };
-
-
