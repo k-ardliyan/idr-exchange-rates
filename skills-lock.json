@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "elysiajs": {
+      "source": "elysiajs/skills",
+      "sourceType": "github",
+      "computedHash": "1f8cdb3c66e6127bd7e31fd5478bf912d976059896629cc58eec031f9bae0c74"
+    }
+  }
+}

@@ -1,22 +1,23 @@
 {
   "name": "idr-exchange-rates",
   "displayName": "IDR Exchange Rates",
-  "description": "A web scraper and API to collect exchange rates of the Indonesian Rupiah (IDR) from multiple sources, including Bank Indonesia and major commercial banks. Supports real-time data retrieval.",
-  "version": "1.2.0",
+  "description": "Personal learning project: Bun + Elysia API that scrapes Indonesian bank sites and returns IDR exchange rates as JSON (BCA, BI, BNI, BRI, Mandiri). OpenAPI docs, CORS, short response cache—not a production or commercial service.",
+  "version": "2.0.0",
   "author": {
     "name": "k-ardliyan",
     "url": "https://github.com/k-ardliyan"
   },
-  "license": "MIT",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist",
-    "start": "NODE_ENV=production bun src/index.ts"
+    "dev": "bun --watch src/index.ts",
+    "build": "bun build src/index.ts --target bun --outdir dist",
+    "start": "NODE_ENV=production bun dist/index.js",
+    "preview": "NODE_ENV=production bun src/index.ts"
   },
   "dependencies": {
+    "@elysiajs/cors": "^1.4.1",
     "@elysiajs/swagger": "^1.3.1",
-    "cheerio": "^1.1.2",
+    "cheerio": "^1.2.0",
     "elysia": "latest"
   },
   "devDependencies": {

@@ -1,74 +1,93 @@
 <div align="center">
 
-# 🏦 IDR Exchange Rates API
+# IDR Exchange Rates API
 
 [![Made with Bun](https://img.shields.io/badge/Bun-v1.0.+-FBF0DF.svg?logo=bun)](https://bun.sh) [![Powered by TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Built with Elysia](https://img.shields.io/badge/Elysia-Latest-B355F9.svg)](https://elysiajs.com/)
 
-A learning project for building an IDR currency exchange rate API using Bun, Elysia, and TypeScript.
+API that scrapes public bank websites and returns Indonesian Rupiah (IDR) exchange rates as JSON. Built with Bun, Elysia, and TypeScript.
 
-[Getting Started](#-getting-started) • [Documentation](#-api-documentation) • [Tech Stack](#️-tech-stack)
+**Personal learning project** — this repository is for exploring technologies and practicing API design; it is not a commercial product or an official service.
+
+[Getting started](#getting-started) • [API documentation](#api-documentation) • [Configuration](#configuration) • [Project structure](#project-structure)
 
 </div>
 
-## 📖 Overview
+## Overview
 
-> **📚 Learning Project**: This repository was created for learning and technology exploration purposes. It is not intended for production use or public interest.
+The main goal is learning: modern backend patterns (routing, validation, OpenAPI, error handling, CORS), HTML scraping, and a maintainable codebase.
 
-IDR Exchange Rates API is a practice project to learn how to build a simple API that fetches currency exchange rates from various Indonesian banking sources.
+The API exposes HTTP endpoints with a consistent JSON shape (`success`, `message`, `data` or `error`). Data comes from banks’ public pages; successful responses per bank may be served from a **short in-memory cache (~45 seconds)** to reduce load on upstream sites.
 
-### 🌟 Key Features
+### Key features
 
-- **Multi-source Data Collection**: Exchange rates from:
-  - 🏛️ Bank Central Asia (BCA)
-  - 🏛️ Bank Indonesia (BI)
-  - 🏛️ Bank Negara Indonesia (BNI)
-  - 🏛️ Bank Rakyat Indonesia (BRI)
-  - 🏛️ Bank Mandiri
-- **Real-time Data**: Latest exchange rates with timestamps
-- **Consistent API Format**: Standardized JSON responses across all endpoints
-- **Robust Error Handling**: Clear error messages and status codes
-- **Extensive Documentation**: Interactive Swagger UI documentation
-- **Performance Optimized**: Built with Bun and Elysia for maximum speed
+- **Multiple sources**: BCA, Bank Indonesia (BI), BNI, BRI, Mandiri
+- **OpenAPI / Swagger UI** at `/docs`, JSON spec at `/docs/json`
+- **CORS** for browser access (GET, HEAD, OPTIONS); optional origin allowlist via environment
+- **Request correlation**: `x-request-id` header (client-provided or server-generated) echoed on responses
+- **Error handling**: uniform JSON errors (404, 422 validation, 500) at the application level
+- **Response validation** per route using TypeBox schemas and registered models for documentation
 
-## 🚀 Getting Started
+## Getting started
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) runtime (>= 1.0.0)
+- [Bun](https://bun.sh/) (latest recommended)
 
-### Installation
+### Install and run
 
-1. Clone the repository: `git clone https://github.com/k-ardliyan/idr-exchange-rates.git`
-2. Navigate into the project directory: `cd idr-exchange-rates`
-3. Install the dependencies: `bun install`
-4. Start the server: `bun run start`
+```bash
+git clone https://github.com/k-ardliyan/idr-exchange-rates.git
+cd idr-exchange-rates
+bun install
+```
 
-The server will start at http://localhost:3000
+- **Development (watch):** `bun run dev` — same as `bun --watch src/index.ts` (auto-reload)
+- **Production build:** `bun run build` — bundles to `dist/index.js` with `--target bun` (recommended in Elysia docs)
+- **Run the bundle:** `bun run start` — sets `NODE_ENV=production` and runs `dist/index.js` (`package.json` scripts use the **Bun shell**, so `NODE_ENV=...` works on Windows too)
+- **Without a build (quick check):** `bun run preview` — runs `src/index.ts` directly with `NODE_ENV=production` (handy for local tests, not the intended deploy path)
 
-## 📚 API Documentation
+Default server: `http://localhost:3000` (override with `PORT`).
 
-The API documentation is available via Swagger UI at `/docs`
+## API documentation
 
-### Endpoints
+| Method | Path           | Description                                   |
+| ------ | -------------- | --------------------------------------------- |
+| GET    | `/`            | Redirects to `/docs`                          |
+| GET    | `/api`         | Short API metadata (name, version, docs link) |
+| GET    | `/api/bca`     | BCA rates                                     |
+| GET    | `/api/bi`      | Bank Indonesia rates                          |
+| GET    | `/api/bni`     | BNI rates                                     |
+| GET    | `/api/bri`     | BRI rates                                     |
+| GET    | `/api/mandiri` | Mandiri rates                                 |
+| GET    | `/docs`        | Swagger UI                                    |
+| GET    | `/docs/json`   | OpenAPI specification (JSON)                  |
 
-- GET `/api/bca` - Retrieve Bank BCA exchange rates
-- GET `/api/bi` - Retrieve Bank Indonesia exchange rates
-- GET `/api/bni` - Retrieve Bank BNI exchange rates
-- GET `/api/bri` - Retrieve Bank BRI exchange rates
-- GET `/api/mandiri` - Retrieve Bank Mandiri exchange rates
-- GET `/docs` - View API documentation
+## Configuration
 
-## 🛠️ Tech Stack
+| Variable      | Description                                                                                                                         |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`        | HTTP port (default `3000`)                                                                                                          |
+| `NODE_ENV`    | Set to `production` to hide internal error details in 500 responses                                                                 |
+| `CORS_ORIGIN` | Comma-separated origins; empty = permissive CORS for any origin (no credentials). If set, credentials are enabled for those origins |
 
-- Bun - JavaScript runtime & package manager
-- Elysia - TypeScript web framework
-- Cheerio - Server-side HTML parsing
-- TypeScript - Type-safe JavaScript
+## Project structure
 
-## 📄 License
+- `src/index.ts` — server bootstrap: CORS, `derive` / `onAfterResponse`, Swagger, `onError`
+- `src/routes.ts` — `/api` route aggregation and shared model plugin
+- `src/plugins/api-models.ts` — OpenAPI model registration (per-bank success/error envelopes)
+- `src/lib/create-scrape-route.ts` — GET route factory for scraping, timeout, cache, and `status()` errors
+- `src/models/api-response.ts` — shared JSON envelope schemas
+- `src/features/<bank>/` — `route.ts`, `service.ts`, `scraper.ts`, `schema.ts` per source
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## Tech stack
 
-## ⚠️ Disclaimer
+- [Bun](https://bun.sh/) — runtime and package manager
+- [Elysia](https://elysiajs.com/) — HTTP framework
+- [@elysiajs/swagger](https://github.com/elysiajs/swagger) — interactive API docs
+- [@elysiajs/cors](https://github.com/elysiajs/cors) — CORS
+- [Cheerio](https://cheerio.js.org/) — server-side HTML parsing
+- TypeScript
 
-This repository was created for learning purposes. The exchange rate data displayed may not be 100% accurate and **should not be used** as a reference for financial decisions. Always verify rates directly from the official bank sources.
+## Disclaimer
+
+Rates are obtained by scraping public bank pages and are **not guaranteed** to be accurate or up to date. Do not rely on them as the sole basis for financial decisions; always confirm with official bank channels.

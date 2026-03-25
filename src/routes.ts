@@ -4,8 +4,10 @@ import { bcaRoutes } from "./features/bca";
 import { biRoutes } from "./features/bi";
 import { bniRoutes } from "./features/bni";
 import { briRoutes } from "./features/bri";
+import { apiModels } from "./plugins/api-models";
 
-export const apiRoutes = new Elysia({ prefix: "/api" })
+export const apiRoutes = new Elysia({ name: "api-rates", prefix: "/api" })
+  .use(apiModels)
   .get(
     "/",
     () => {
@@ -21,7 +23,7 @@ export const apiRoutes = new Elysia({ prefix: "/api" })
       detail: {
         hide: true,
       },
-    }
+    },
   )
   .use(bcaRoutes)
   .use(biRoutes)

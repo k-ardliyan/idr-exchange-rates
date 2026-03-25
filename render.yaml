@@ -8,6 +8,6 @@ services:
       - key: BUN_VERSION
         value: latest
     region: singapore
-    buildCommand: bun install
-    startCommand: bun start
+    buildCommand: bun install && bun run build
+    startCommand: bun run start
 version: "1"

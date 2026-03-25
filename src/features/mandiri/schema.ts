@@ -1,4 +1,8 @@
 import { t } from "elysia";
+import {
+  ApiErrorResponseSchema,
+  apiSuccessResponseSchema,
+} from "../../models/api-response";
 
 const ExchangeRateSchema = t.Object({
   currency: t.String({
@@ -81,46 +85,11 @@ const DataSchema = t.Object({
   rates: t.Array(ExchangeRateSchema),
 });
 
-const SuccessResponseSchema = t.Object({
-  success: t.Boolean({
-    description: "Indicates if the request was successful",
-    example: true,
-  }),
-  message: t.String({
-    description: "Response message",
-    example: "Exchange rates retrieved successfully",
-  }),
-  data: DataSchema,
-});
-
-const ErrorResponseSchema = t.Object({
-  success: t.Boolean({
-    description: "Indicates if the request was successful",
-    example: false,
-  }),
-  message: t.String({
-    description: "Error message description",
-    example: "Failed to fetch exchange rates from Bank Mandiri",
-  }),
-  error: t.Object({
-    type: t.String({
-      description: "Type of error that occurred",
-      example: "TimeoutError",
-    }),
-    detail: t.String({
-      description: "Detailed error information",
-      example: "Request took too long to respond",
-    }),
-    code: t.Number({
-      description: "HTTP status code",
-      example: 500,
-    }),
-  }),
-});
+const SuccessResponseSchema = apiSuccessResponseSchema(DataSchema);
 
 export {
   ExchangeRateSchema,
   DataSchema,
   SuccessResponseSchema,
-  ErrorResponseSchema,
+  ApiErrorResponseSchema as ErrorResponseSchema,
 };

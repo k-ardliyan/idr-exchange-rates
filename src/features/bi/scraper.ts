@@ -2,7 +2,7 @@ import { load } from "cheerio";
 import type { CheerioAPI } from "cheerio";
 import { politeFetch } from "../../utils/scraper";
 
-const BI_URL =
+export const BI_URL =
   "https://www.bi.go.id/id/statistik/informasi-kurs/transaksi-bi/default.aspx";
 
 interface BIExchangeRate {
@@ -19,9 +19,14 @@ interface BiScraperOptions {
   date?: string; // Date in DD-MM-YYYY format
 }
 
+export type BIscrapeResult = {
+  rates: BIExchangeRate[];
+  sourceUrl: string;
+};
+
 export const scrapeBI = async (
-  options: BiScraperOptions = {}
-): Promise<BIExchangeRate[]> => {
+  options: BiScraperOptions = {},
+): Promise<BIscrapeResult> => {
   try {
     // First request to get the form tokens
     const initialResponse = await politeFetch(BI_URL);
@@ -39,7 +44,10 @@ export const scrapeBI = async (
 
     // If no custom options, just parse the current page
     if (!options.currency && !options.date) {
-      return parseExchangeRates($, currentDate, false);
+      return {
+        rates: parseExchangeRates($, currentDate, false),
+        sourceUrl: BI_URL,
+      };
     }
 
     // Otherwise, prepare for form submission with filters
@@ -62,7 +70,7 @@ export const scrapeBI = async (
     if (options.currency) {
       formData.append(
         "ctl00$PlaceHolderMain$g_6c89d4ad_107f_437d_bd54_8fda17b556bf$ctl00$ddlmatauang1",
-        options.currency.trim().toUpperCase().padEnd(5, " ")
+        options.currency.trim().toUpperCase().padEnd(5, " "),
       );
     }
 
@@ -70,17 +78,17 @@ export const scrapeBI = async (
     if (options.date) {
       formData.append(
         "ctl00$PlaceHolderMain$g_6c89d4ad_107f_437d_bd54_8fda17b556bf$ctl00$txtTanggal",
-        options.date
+        options.date,
       );
       formData.append(
         "ctl00$PlaceHolderMain$g_6c89d4ad_107f_437d_bd54_8fda17b556bf$ctl00$btnSearch2",
-        "Cari"
+        "Cari",
       );
     } else {
       // Default to daily view
       formData.append(
         "ctl00$PlaceHolderMain$g_6c89d4ad_107f_437d_bd54_8fda17b556bf$ctl00$btnSearch2",
-        "Cari"
+        "Cari",
       );
     }
 
@@ -102,7 +110,7 @@ export const scrapeBI = async (
 
     // Try to find date in the special date field that appears in filtered results
     const filteredSpecificDate = $filtered(
-      "#ctl00_PlaceHolderMain_g_6c89d4ad_107f_437d_bd54_8fda17b556bf_ctl00_lblKursTransaksiKTBI2"
+      "#ctl00_PlaceHolderMain_g_6c89d4ad_107f_437d_bd54_8fda17b556bf_ctl00_lblKursTransaksiKTBI2",
     )
       .text()
       .trim();
@@ -111,25 +119,28 @@ export const scrapeBI = async (
     } else {
       // Fall back to standard date format
       const filteredDateText = $filtered(
-        ".search-box-wrapper:contains('Update Terakhir')"
+        ".search-box-wrapper:contains('Update Terakhir')",
       )
         .text()
         .trim();
       const filteredDateMatch = filteredDateText.match(
-        /Update Terakhir\s+(.+)/
+        /Update Terakhir\s+(.+)/,
       );
       if (filteredDateMatch && filteredDateMatch[1]) {
         filteredDate = filteredDateMatch[1];
       }
     }
 
-    return parseExchangeRates($filtered, filteredDate, true);
+    return {
+      rates: parseExchangeRates($filtered, filteredDate, true),
+      sourceUrl: BI_URL,
+    };
   } catch (error) {
     console.error("Error scraping BI rates:", error);
     throw new Error(
       `Failed to scrape BI rates: ${
         error instanceof Error ? error.message : String(error)
-      }`
+      }`,
     );
   }
 };
@@ -137,7 +148,7 @@ export const scrapeBI = async (
 function parseExchangeRates(
   $: CheerioAPI,
   date: string,
-  isFiltered: boolean
+  isFiltered: boolean,
 ): BIExchangeRate[] {
   const rates: BIExchangeRate[] = [];
 
@@ -146,7 +157,7 @@ function parseExchangeRates(
   if (isFiltered) {
     // Filtered result table (with parameters)
     rows = $(
-      "#ctl00_PlaceHolderMain_g_6c89d4ad_107f_437d_bd54_8fda17b556bf_ctl00_gvSearchResult1 tbody tr"
+      "#ctl00_PlaceHolderMain_g_6c89d4ad_107f_437d_bd54_8fda17b556bf_ctl00_gvSearchResult1 tbody tr",
     );
     // Skip the header row (which is index 0)
     rows = rows.slice(1);
@@ -163,10 +174,10 @@ function parseExchangeRates(
     const value =
       parseFloat($(tds[1]).text().replace(/\./g, "").replace(/,/g, ".")) || 1;
     const sellRate = parseFloat(
-      $(tds[2]).text().replace(/\./g, "").replace(/,/g, ".")
+      $(tds[2]).text().replace(/\./g, "").replace(/,/g, "."),
     );
     const buyRate = parseFloat(
-      $(tds[3]).text().replace(/\./g, "").replace(/,/g, ".")
+      $(tds[3]).text().replace(/\./g, "").replace(/,/g, "."),
     );
 
     rates.push({
