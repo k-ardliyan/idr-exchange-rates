@@ -9,6 +9,10 @@ export const bcaRoutes = createScrapeGetRoute({
     "Retrieves the latest exchange rates from BCA's website, including e-Rate, TT counter rates, and bank notes rates for multiple currencies. Responses may be served from a short-lived cache (~45s) to reduce load on upstream sites.",
   successResponseModel: "rates.bcaSuccess",
   successMessage: "Exchange rates retrieved successfully",
+  staleSuccessMessage:
+    "Exchange rates retrieved successfully (stale cache fallback)",
   failMessage: "Failed to fetch exchange rates from Bank BCA",
+  allowStaleFallbackOnError: true,
+  staleMaxAgeMs: 1000 * 60 * 60 * 24 * 7,
   scrape: fetchBCARatesData,
 });

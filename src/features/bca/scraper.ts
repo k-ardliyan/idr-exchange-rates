@@ -1,7 +1,12 @@
 import { load } from "cheerio";
-import { politeFetch } from "../../utils/scraper";
+import {
+  assertNoAntiBotChallengePage,
+  politeFetch,
+} from "../../utils/scraper";
+import { scrapeKursWebBankFallback } from "../../utils/kurs-web-fallback";
 
 const BCA_URL = "https://www.bca.co.id/en/informasi/kurs";
+const BCA_FALLBACK_SLUG = "bca";
 
 interface ExchangeRate {
   currency: string;
@@ -21,6 +26,17 @@ interface ExchangeRate {
     date: string;
   };
 }
+
+type BcaScrapeResult = {
+  sourceUrl: string;
+  rates: ExchangeRate[];
+  rateDates: {
+    eRate: string;
+    ttCounter: string;
+    bankNotes: string;
+  };
+  sourceName?: string;
+};
 
 // Convert BCA date format "27 Feb 2025 / 10:00 WIB" to ISO format
 const convertToISODate = (dateStr: string): string => {
@@ -68,66 +84,79 @@ const convertToISODate = (dateStr: string): string => {
   }
 };
 
-export const scrapeBCA = async () => {
-  const response = await politeFetch(BCA_URL);
-  const html = await response.text();
-  const $ = load(html);
+const ensureDate = (value: string): string => {
+  return value || new Date().toISOString();
+};
 
+const parsePrimaryAmount = (text: string): number => {
+  const cleaned = text.replace(/[^\d.,-]/g, "").trim();
+  if (!cleaned) return Number.NaN;
+
+  const parsed = parseFloat(cleaned.replace(/,/g, ""));
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+};
+
+const parsePrimaryRates = (html: string): BcaScrapeResult => {
+  assertNoAntiBotChallengePage(html, "BCA");
+
+  const $ = load(html);
   const rates: ExchangeRate[] = [];
 
-  // Get dates from the table header spans
-  // Format in HTML: "24 Dec 2025 / 12:47 WIB" inside p.a-header-rate > span.a-text-micro
   const extractDate = (headerIndex: number): string => {
     try {
-      // The headers are in order: e-Rate (0), TT Counter (1), Bank Notes (2)
       const headerSpans = $(
-        "th.header-column p.a-header-rate span.a-text-micro"
+        "th.header-column p.a-header-rate span.a-text-micro",
       );
       const dateText = headerSpans.eq(headerIndex).text().trim();
-      return dateText ? `${dateText} WIB` : "";
+      if (!dateText) return "";
+      return /\bWIB\b/i.test(dateText) ? dateText : `${dateText} WIB`;
     } catch (e) {
       console.error(`Error extracting date for header ${headerIndex}:`, e);
       return "";
     }
   };
 
-  const eRateDate = extractDate(0);
-  const ttCounterDate = extractDate(1);
-  const bankNotesDate = extractDate(2);
+  const eRateISO = ensureDate(convertToISODate(extractDate(0)));
+  const ttCounterISO = ensureDate(convertToISODate(extractDate(1)));
+  const bankNotesISO = ensureDate(convertToISODate(extractDate(2)));
 
-  // Convert dates to ISO format
-  const eRateISO = convertToISODate(eRateDate);
-  const ttCounterISO = convertToISODate(ttCounterDate);
-  const bankNotesISO = convertToISODate(bankNotesDate);
-
-  // Extract rates from table rows
-  // Row structure: <tr class="m-table-body-row" code="USD">
   $("table.m-table-kurs tbody tr.m-table-body-row").each((_, el) => {
-    const currency = $(el).attr("code") || "";
+    const currencyAttr = $(el).attr("code") ?? "";
+    const currencyText = $(el).find("td").first().text();
+    const currency = (currencyAttr || currencyText).replace(/\s+/g, "").toUpperCase();
+    if (!currency || currency === "CURRENCY") return;
 
-    // e-Rate - td elements have rate-type attribute
-    const eRateBuy = parseFloat(
-      $(el).find('td[rate-type="eRate-buy"] p').text().replace(/,/g, "")
+    const eRateBuy = parsePrimaryAmount(
+      $(el).find('td[rate-type="eRate-buy"] p').text(),
     );
-    const eRateSell = parseFloat(
-      $(el).find('td[rate-type="eRate-sell"] p').text().replace(/,/g, "")
-    );
-
-    // TT Counter
-    const ttCounterBuy = parseFloat(
-      $(el).find('td[rate-type="TTCounter-buy"] p').text().replace(/,/g, "")
-    );
-    const ttCounterSell = parseFloat(
-      $(el).find('td[rate-type="TTCounter-sell"] p').text().replace(/,/g, "")
+    const eRateSell = parsePrimaryAmount(
+      $(el).find('td[rate-type="eRate-sell"] p').text(),
     );
 
-    // Bank Notes
-    const bankNotesBuy = parseFloat(
-      $(el).find('td[rate-type="BankNotes-buy"] p').text().replace(/,/g, "")
+    const ttCounterBuy = parsePrimaryAmount(
+      $(el).find('td[rate-type="TTCounter-buy"] p').text(),
     );
-    const bankNotesSell = parseFloat(
-      $(el).find('td[rate-type="BankNotes-sell"] p').text().replace(/,/g, "")
+    const ttCounterSell = parsePrimaryAmount(
+      $(el).find('td[rate-type="TTCounter-sell"] p').text(),
     );
+
+    const bankNotesBuy = parsePrimaryAmount(
+      $(el).find('td[rate-type="BankNotes-buy"] p').text(),
+    );
+    const bankNotesSell = parsePrimaryAmount(
+      $(el).find('td[rate-type="BankNotes-sell"] p').text(),
+    );
+
+    if (
+      !Number.isFinite(eRateBuy) ||
+      !Number.isFinite(eRateSell) ||
+      !Number.isFinite(ttCounterBuy) ||
+      !Number.isFinite(ttCounterSell) ||
+      !Number.isFinite(bankNotesBuy) ||
+      !Number.isFinite(bankNotesSell)
+    ) {
+      return;
+    }
 
     rates.push({
       currency,
@@ -149,6 +178,12 @@ export const scrapeBCA = async () => {
     });
   });
 
+  if (rates.length === 0) {
+    throw new Error(
+      "BCA: no currency rows parsed from primary source (layout changed or blocked)",
+    );
+  }
+
   return {
     sourceUrl: BCA_URL,
     rates,
@@ -158,4 +193,76 @@ export const scrapeBCA = async () => {
       bankNotes: bankNotesISO,
     },
   };
+};
+
+const parseFallbackRates = async (): Promise<BcaScrapeResult> => {
+  const fallback = await scrapeKursWebBankFallback({
+    slug: BCA_FALLBACK_SLUG,
+    bankName: "Bank BCA",
+  });
+
+  const date = fallback.fetchedAt;
+  const rates: ExchangeRate[] = fallback.rates.map((rate) => ({
+    currency: rate.currency,
+    eRate: {
+      buy: rate.buy,
+      sell: rate.sell,
+      date,
+    },
+    ttCounter: {
+      buy: rate.buy,
+      sell: rate.sell,
+      date,
+    },
+    bankNotes: {
+      buy: rate.buy,
+      sell: rate.sell,
+      date,
+    },
+  }));
+
+  return {
+    sourceUrl: fallback.sourceUrl,
+    sourceName: fallback.sourceName,
+    rates,
+    rateDates: {
+      eRate: date,
+      ttCounter: date,
+      bankNotes: date,
+    },
+  };
+};
+
+export const scrapeBCA = async (): Promise<BcaScrapeResult> => {
+  let primaryError: unknown;
+
+  try {
+    const primaryResponse = await politeFetch(BCA_URL, {
+      timeoutMs: 10_000,
+      retries: 0,
+      minDelayMs: 120,
+      maxDelayMs: 350,
+    });
+    const primaryHtml = await primaryResponse.text();
+    return parsePrimaryRates(primaryHtml);
+  } catch (error) {
+    primaryError = error;
+  }
+
+  try {
+    return await parseFallbackRates();
+  } catch (fallbackError) {
+    const primaryMsg =
+      primaryError instanceof Error
+        ? primaryError.message
+        : String(primaryError ?? "unknown primary error");
+    const fallbackMsg =
+      fallbackError instanceof Error
+        ? fallbackError.message
+        : String(fallbackError ?? "unknown fallback error");
+
+    throw new Error(
+      `BCA: primary and fallback sources failed. primary=${primaryMsg}; fallback=${fallbackMsg}`,
+    );
+  }
 };

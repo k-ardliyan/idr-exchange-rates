@@ -9,6 +9,16 @@ type PoliteOptions = RequestInit & {
   timeoutMs?: number;
 };
 
+const RETRYABLE_NETWORK_CODES = new Set([
+  "ENOTFOUND",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EAI_AGAIN",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ETIMEDOUT",
+]);
+
 const DEFAULT_HEADERS: HeadersInit = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
@@ -39,6 +49,76 @@ const parseRetryAfter = (headerValue: string | null): number | null => {
   if (!Number.isNaN(date.getTime()))
     return Math.max(0, date.getTime() - Date.now());
   return null;
+};
+
+const isRetryableError = (error: unknown): boolean => {
+  const err = error as {
+    status?: unknown;
+    name?: unknown;
+    code?: unknown;
+    message?: unknown;
+  };
+
+  const status =
+    typeof err?.status === "number" ? (err.status as number) : undefined;
+  if (typeof status === "number") {
+    return isRetryableStatus(status);
+  }
+
+  const name = String(err?.name ?? "");
+  if (name === "AbortError" || name === "TimeoutError") {
+    return true;
+  }
+
+  const code = typeof err?.code === "string" ? err.code : "";
+  if (RETRYABLE_NETWORK_CODES.has(code)) {
+    return true;
+  }
+
+  const message = String(err?.message ?? "").toLowerCase();
+  if (message.includes("timeout")) {
+    return true;
+  }
+
+  return false;
+};
+
+export const isAntiBotChallengePage = (html: string): boolean => {
+  if (!html) return false;
+
+  const probe = html.slice(0, 12000).toLowerCase();
+
+  const hasIncapsulaMarker = probe.includes("_incapsula_resource");
+  const hasChallengeText =
+    probe.includes("additional security check is required") ||
+    probe.includes("why am i seeing this page") ||
+    probe.includes("powered by imperva");
+  const hasRejectedText =
+    probe.includes("<title>request rejected") ||
+    probe.includes("the requested url was rejected") ||
+    probe.includes("support id is");
+  const hasCaptcha = probe.includes("captcha");
+
+  return (
+    hasChallengeText ||
+    hasRejectedText ||
+    (hasIncapsulaMarker && (hasCaptcha || html.length < 5000)) ||
+    probe.includes("access denied")
+  );
+};
+
+export const assertNoAntiBotChallengePage = (
+  html: string,
+  source: string,
+): void => {
+  if (!isAntiBotChallengePage(html)) return;
+
+  throw Object.assign(
+    new Error(
+      `${source}: upstream blocked this server with anti-bot challenge (Imperva/CAPTCHA)`,
+    ),
+    { name: "UpstreamBlockedError", status: 502 },
+  );
 };
 
 export const politeFetch = async (
@@ -120,8 +200,12 @@ export const politeFetch = async (
     } catch (error) {
       lastError = error;
       clearTimeout(timer);
-      // For AbortError / network errors, attempt retry if we have attempts left
-      if (attempt > retries) break;
+
+      // Retry only for transient failures (timeouts, retryable HTTP, or network errors)
+      if (attempt > retries || !isRetryableError(error)) {
+        break;
+      }
+
       const backoff = Math.min(maxBackoffMs, backoffMs * 2 ** (attempt - 1));
       const jitter = randomJitter(100, 500);
       await sleep(backoff + jitter);

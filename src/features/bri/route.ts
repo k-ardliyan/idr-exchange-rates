@@ -9,6 +9,10 @@ export const briRoutes = createScrapeGetRoute({
     "Retrieves the latest exchange rates from BRI's website, including e-Rate and TT counter rates for multiple currencies. Responses may be served from a short-lived cache (~45s) to reduce load on upstream sites.",
   successResponseModel: "rates.briSuccess",
   successMessage: "Exchange rates retrieved successfully",
+  staleSuccessMessage:
+    "Exchange rates retrieved successfully (stale cache fallback)",
   failMessage: "Failed to fetch exchange rates from Bank BRI",
+  allowStaleFallbackOnError: true,
+  staleMaxAgeMs: 1000 * 60 * 60 * 24 * 7,
   scrape: fetchBRIRatesData,
 });

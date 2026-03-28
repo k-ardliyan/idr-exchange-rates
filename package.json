@@ -2,7 +2,7 @@
   "name": "idr-exchange-rates",
   "displayName": "IDR Exchange Rates",
   "description": "Personal learning project: Bun + Elysia API that scrapes Indonesian bank sites and returns IDR exchange rates as JSON (BCA, BI, BNI, BRI, Mandiri). OpenAPI docs, CORS, short response cache—not a production or commercial service.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "author": {
     "name": "k-ardliyan",
     "url": "https://github.com/k-ardliyan"

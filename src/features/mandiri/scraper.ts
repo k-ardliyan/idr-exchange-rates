@@ -1,7 +1,13 @@
 import { load } from "cheerio";
-import { politeFetch } from "../../utils/scraper";
+import type { CheerioAPI } from "cheerio";
+import {
+  assertNoAntiBotChallengePage,
+  politeFetch,
+} from "../../utils/scraper";
+import { scrapeKursWebBankFallback } from "../../utils/kurs-web-fallback";
 
 const MANDIRI_URL = "https://www.bankmandiri.co.id/kurs";
+const MANDIRI_FALLBACK_SLUG = "mandiri";
 
 interface ExchangeRate {
   currency: string;
@@ -22,27 +28,62 @@ interface ExchangeRate {
   };
 }
 
-// Convert date from "DD/MM/YY - HH:MM WIB" to ISO format "YYYY-MM-DDTHH:MM:SS.SSSZ"
+type RateDates = {
+  specialRate: string;
+  ttCounter: string;
+  bankNotes: string;
+};
+
+type MandiriScrapeResult = {
+  sourceUrl: string;
+  rates: ExchangeRate[];
+  rateDates: RateDates;
+  sourceName?: string;
+};
+
+const parseAmount = (text: string): number => {
+  const raw = text.replace(/[^\d.,-]/g, "").trim();
+  if (!raw) return NaN;
+
+  if (/^\d{1,3}(\.\d{3})+,\d{1,4}$/.test(raw)) {
+    return parseFloat(raw.replace(/\./g, "").replace(",", "."));
+  }
+
+  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(raw)) {
+    return parseFloat(raw.replace(/,/g, ""));
+  }
+
+  const normalized = raw.replace(/\./g, "").replace(",", ".");
+  const parsed = parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : NaN;
+};
+
+const normalizeCurrency = (raw: string): string => {
+  const clean = raw.replace(/\s+/g, " ").trim().toUpperCase();
+  if (!clean) return "";
+
+  const code = clean.match(/\b[A-Z]{3}\b/);
+  if (code) return code[0];
+
+  return clean.replace(/[^A-Z]/g, "");
+};
+
 const convertToISODate = (dateStr: string): string => {
   try {
     if (!dateStr) return "";
 
-    // Parse the date string - format: "28/02/25 - 09:00 WIB"
-    const regex = /(\d{2})\/(\d{2})\/(\d{2})\s*-\s*(\d{2}):(\d{2})\s*WIB/;
+    const regex = /(\d{2})\/(\d{2})\/(\d{2})\s*-\s*(\d{2}):(\d{2})\s*WIB/i;
     const match = dateStr.match(regex);
-
     if (!match) return "";
 
-    const [_, day, month, year, hour, minute] = match;
+    const [, day, month, year, hour, minute] = match;
 
-    // Format the ISO string manually to correctly represent WIB timezone (UTC+7)
-    const fullYear = 2000 + parseInt(year);
-    const monthPadded = parseInt(month).toString().padStart(2, "0");
-    const dayPadded = parseInt(day).toString().padStart(2, "0");
-    const hourPadded = parseInt(hour).toString().padStart(2, "0");
-    const minutePadded = parseInt(minute).toString().padStart(2, "0");
+    const fullYear = 2000 + parseInt(year, 10);
+    const monthPadded = parseInt(month, 10).toString().padStart(2, "0");
+    const dayPadded = parseInt(day, 10).toString().padStart(2, "0");
+    const hourPadded = parseInt(hour, 10).toString().padStart(2, "0");
+    const minutePadded = parseInt(minute, 10).toString().padStart(2, "0");
 
-    // Create ISO string with the +07:00 timezone offset
     return `${fullYear}-${monthPadded}-${dayPadded}T${hourPadded}:${minutePadded}:00+07:00`;
   } catch (e) {
     console.error("Error converting date:", e);
@@ -50,110 +91,200 @@ const convertToISODate = (dateStr: string): string => {
   }
 };
 
-export const scrapeMandiri = async () => {
-  const response = await politeFetch(MANDIRI_URL);
-  const html = await response.text();
-  const $ = load(html);
+const ensureDate = (value: string): string => {
+  return value || new Date().toISOString();
+};
 
+const extractRateDates = ($: CheerioAPI): RateDates => {
+  const dateRegex = /(\d{2}\/\d{2}\/\d{2}\s*-\s*\d{2}:\d{2}\s*WIB)/i;
+
+  let specialDate = "";
+  let ttDate = "";
+  let bankNotesDate = "";
+
+  $("table thead tr th").each((_, th) => {
+    const text = $(th).text().replace(/\s+/g, " ").trim();
+    if (!text) return;
+
+    const dateMatch = text.match(dateRegex);
+    if (!dateMatch?.[1]) return;
+
+    const lower = text.toLowerCase();
+    if (!specialDate && lower.includes("special")) {
+      specialDate = dateMatch[1];
+    }
+    if (!ttDate && lower.includes("tt")) {
+      ttDate = dateMatch[1];
+    }
+    if (!bankNotesDate && lower.includes("bank")) {
+      bankNotesDate = dateMatch[1];
+    }
+  });
+
+  const firstHeaderCells = $("table thead tr:first-child th");
+  if (!specialDate) {
+    specialDate = (firstHeaderCells.eq(1).text().match(dateRegex)?.[1] ?? "").trim();
+  }
+  if (!ttDate) {
+    ttDate = (firstHeaderCells.eq(2).text().match(dateRegex)?.[1] ?? "").trim();
+  }
+  if (!bankNotesDate) {
+    bankNotesDate =
+      (firstHeaderCells.eq(3).text().match(dateRegex)?.[1] ?? "").trim();
+  }
+
+  return {
+    specialRate: ensureDate(convertToISODate(specialDate)),
+    ttCounter: ensureDate(convertToISODate(ttDate)),
+    bankNotes: ensureDate(convertToISODate(bankNotesDate)),
+  };
+};
+
+const asSafeNumber = (value: number): number => {
+  return Number.isFinite(value) ? value : 0;
+};
+
+const parsePrimaryRates = (html: string): MandiriScrapeResult => {
+  assertNoAntiBotChallengePage(html, "MANDIRI");
+
+  const $ = load(html);
   const rates: ExchangeRate[] = [];
 
-  // Get dates from header - more robust extraction
-  const extractDate = (headerIndex: number): string => {
-    try {
-      // Get the inner HTML of the header cell
-      const headerCell = $(headers[headerIndex]);
+  const tableRows = $("table tbody tr");
+  if (tableRows.length === 0) {
+    throw new Error("MANDIRI: rate table rows not found in HTML");
+  }
 
-      // Extract the text after the <br/> tag
-      // This specifically targets the format where date is after <br/>
-      const brTag = headerCell.find("br");
-      if (brTag.length > 0) {
-        // Get the text content after the <br/> tag
-        const nextSibling = brTag[0].nextSibling;
-        const dateText =
-          nextSibling && nextSibling.type === "text"
-            ? nextSibling.data?.trim() || ""
-            : "";
-        return dateText;
-      }
+  const rateDates = extractRateDates($);
 
-      // Fallback: try to extract from the content structure
-      const headerText = headerCell.text().trim();
-      const dateMatch = headerText.match(
-        /(\d{2}\/\d{2}\/\d{2}\s+-\s+\d{2}:\d{2}\s+WIB)/
-      );
-      return dateMatch ? dateMatch[1] : "";
-    } catch (e) {
-      console.error(`Error extracting date from header ${headerIndex}:`, e);
-      return "";
-    }
-  };
-
-  const headers = $("table thead tr:first-child th"); // Only get cells from first row
-  const specialRateDate = extractDate(1); // Index 1 is "Special Rate*"
-  const ttCounterDate = extractDate(2); // Index 2 is "TT Counter"
-  const bankNotesDate = extractDate(3); // Index 3 is "Bank Notes"
-
-  // Convert dates to ISO format
-  const specialRateISO = convertToISODate(specialRateDate);
-  const ttCounterISO = convertToISODate(ttCounterDate);
-  const bankNotesISO = convertToISODate(bankNotesDate);
-
-  $("table tbody tr").each((_, el) => {
+  tableRows.each((_, el) => {
     const tds = $(el).find("td");
+    if (tds.length < 7) return;
 
-    const currency = $(tds[0]).text().trim();
+    const currency = normalizeCurrency($(tds[0]).text());
+    if (!currency || currency === "CURRENCY") return;
 
-    // Special Rate
-    const specialRateBuy = parseFloat(
-      $(tds[1]).text().replace(/\./g, "").replace(/,/g, ".")
-    );
-    const specialRateSell = parseFloat(
-      $(tds[2]).text().replace(/\./g, "").replace(/,/g, ".")
-    );
+    const specialRateBuy = parseAmount($(tds[1]).text());
+    const specialRateSell = parseAmount($(tds[2]).text());
+    const ttCounterBuy = parseAmount($(tds[3]).text());
+    const ttCounterSell = parseAmount($(tds[4]).text());
+    const bankNotesBuy = parseAmount($(tds[5]).text());
+    const bankNotesSell = parseAmount($(tds[6]).text());
 
-    // TT Counter
-    const ttCounterBuy = parseFloat(
-      $(tds[3]).text().replace(/\./g, "").replace(/,/g, ".")
-    );
-    const ttCounterSell = parseFloat(
-      $(tds[4]).text().replace(/\./g, "").replace(/,/g, ".")
-    );
+    const numericCount = [
+      specialRateBuy,
+      specialRateSell,
+      ttCounterBuy,
+      ttCounterSell,
+      bankNotesBuy,
+      bankNotesSell,
+    ].filter((value) => Number.isFinite(value)).length;
 
-    // Bank Notes
-    const bankNotesBuy = parseFloat(
-      $(tds[5]).text().replace(/\./g, "").replace(/,/g, ".")
-    );
-    const bankNotesSell = parseFloat(
-      $(tds[6]).text().replace(/\./g, "").replace(/,/g, ".")
-    );
+    if (numericCount < 2) return;
 
     rates.push({
       currency,
       specialRate: {
-        buy: specialRateBuy,
-        sell: specialRateSell,
-        date: specialRateISO,
+        buy: asSafeNumber(specialRateBuy),
+        sell: asSafeNumber(specialRateSell),
+        date: rateDates.specialRate,
       },
       ttCounter: {
-        buy: ttCounterBuy,
-        sell: ttCounterSell,
-        date: ttCounterISO,
+        buy: asSafeNumber(ttCounterBuy),
+        sell: asSafeNumber(ttCounterSell),
+        date: rateDates.ttCounter,
       },
       bankNotes: {
-        buy: bankNotesBuy,
-        sell: bankNotesSell,
-        date: bankNotesISO,
+        buy: asSafeNumber(bankNotesBuy),
+        sell: asSafeNumber(bankNotesSell),
+        date: rateDates.bankNotes,
       },
     });
   });
 
+  if (rates.length === 0) {
+    throw new Error(
+      "MANDIRI: no currency rows parsed (upstream layout changed or access is blocked)",
+    );
+  }
+
   return {
     sourceUrl: MANDIRI_URL,
     rates,
+    rateDates,
+  };
+};
+
+const parseFallbackRates = async (): Promise<MandiriScrapeResult> => {
+  const fallback = await scrapeKursWebBankFallback({
+    slug: MANDIRI_FALLBACK_SLUG,
+    bankName: "Bank Mandiri",
+  });
+
+  const date = fallback.fetchedAt;
+  const rates: ExchangeRate[] = fallback.rates.map((rate) => ({
+    currency: rate.currency,
+    specialRate: {
+      buy: rate.buy,
+      sell: rate.sell,
+      date,
+    },
+    ttCounter: {
+      buy: rate.buy,
+      sell: rate.sell,
+      date,
+    },
+    bankNotes: {
+      buy: rate.buy,
+      sell: rate.sell,
+      date,
+    },
+  }));
+
+  return {
+    sourceUrl: fallback.sourceUrl,
+    sourceName: fallback.sourceName,
+    rates,
     rateDates: {
-      specialRate: specialRateISO,
-      ttCounter: ttCounterISO,
-      bankNotes: bankNotesISO,
+      specialRate: date,
+      ttCounter: date,
+      bankNotes: date,
     },
   };
+};
+
+export const scrapeMandiri = async (): Promise<MandiriScrapeResult> => {
+  let primaryError: unknown;
+
+  try {
+    const response = await politeFetch(MANDIRI_URL, {
+      timeoutMs: 12_000,
+      retries: 1,
+      minDelayMs: 150,
+      maxDelayMs: 500,
+      backoffMs: 400,
+      maxBackoffMs: 1_500,
+    });
+    const html = await response.text();
+    return parsePrimaryRates(html);
+  } catch (error) {
+    primaryError = error;
+  }
+
+  try {
+    return await parseFallbackRates();
+  } catch (fallbackError) {
+    const primaryMsg =
+      primaryError instanceof Error
+        ? primaryError.message
+        : String(primaryError ?? "unknown primary error");
+    const fallbackMsg =
+      fallbackError instanceof Error
+        ? fallbackError.message
+        : String(fallbackError ?? "unknown fallback error");
+
+    throw new Error(
+      `MANDIRI: primary and fallback sources failed. primary=${primaryMsg}; fallback=${fallbackMsg}`,
+    );
+  }
 };
